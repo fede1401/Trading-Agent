@@ -1,14 +1,7 @@
 import MetaTrader5 as mt5
 from datetime import datetime
-import login_mt5, closeConnectionMt5
+import login_mt5, closeConnectionMt5, variableLocal
 
-
-############ variabili locali programma ###################
-path = 'C:\\Program Files\\MetaTrader 5\\terminal64.exe'
-account = 25114472
-password = 'j8+fCg&E2A_('
-server = 'TickmillEU-Demo'
-#############################################
 
 symbol = "NFLX"
 single_budget = 20 # budget per singolo acquisto
@@ -74,7 +67,7 @@ def place_order(symbol, volume, price):
 
 
 if __name__ == '__main__':
-    login_mt5.login_metaTrader5(account, password, server)
+    login_mt5.login_metaTrader5(variableLocal.account, variableLocal.password, variableLocal.server)
     
     send_order(symbol)
     

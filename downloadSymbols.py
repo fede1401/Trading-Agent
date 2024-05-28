@@ -2,18 +2,10 @@ import MetaTrader5 as mt5
 from datetime import datetime
 import psycopg2 # https://www.youtube.com/watch?v=miEFm1CyjfM
 
-import login_mt5, closeConnectionMt5, downloadData
+import login_mt5, closeConnectionMt5, downloadData, variableLocal
 
 
-############ variabili programma ###################
-path = 'C:\\Program Files\\MetaTrader 5\\terminal64.exe'
-login = 25114472
-password = 'j8+fCg&E2A_('
-server = 'TickmillEU-Demo'
-#############################################
-
-
-login_mt5.login_metaTrader5(login, password, server)
+login_mt5.login_metaTrader5(variableLocal.login, variableLocal.password, variableLocal.server)
 
 
 ############ Ottenimento dati Apple e scrittura su file esterno ###################
