@@ -4,7 +4,7 @@ import login_mt5, closeConnectionMt5, variableLocal
 
 
 def getCurrentMarketPrice(symbol):
-    print(f"\n\nPrezzo di mercato corrente {s}: {mt5.symbol_info_tick(s).ask}\n\n")
+    print(f"\n\nPrezzo di mercato corrente {symbol}: {mt5.symbol_info_tick(symbol).ask}\n\n")
 
 
 
@@ -58,18 +58,18 @@ Ecco alcuni dettagli importanti da considerare:
 """
 
 
-def buyAction_PercProfit(symbol, profit_want):
+def buyAction_PercProfit(symbol, profit_loss_rate):
     symbol_info = checkSymbol(symbol)
 
     # get account currency
     account_currency=mt5.account_info().currency
     print("Account currency:",account_currency)
 
-    # prepare the buy request structure
+    # ottenuto prezzo di acquisto corrente del seguente simbolo
     price = mt5.symbol_info_tick(symbol).ask
 
     # calcolo dello stop loss e takeProfit:
-    profit = price * profit_want
+    profit = price * profit_loss_rate
 
     stopLoss = price - profit
     takeProfit = price + profit
@@ -93,7 +93,7 @@ def buyAction_PercProfit(symbol, profit_want):
     # Creazione dell'ordine
     request = {
         "action": mt5.TRADE_ACTION_DEAL,
-        "symbol": symbolBuy,
+        "symbol": symbol,
         "volume": volume,
         "type": mt5.ORDER_TYPE_BUY,
         "price": price,
@@ -197,12 +197,12 @@ if __name__ == '__main__':
     #    getCurrentMarketPrice("AAPL")
 
 
-    symbolBuy = "TSLA"
+    symbolBuy = "INTC"
     # voglio un profitto dell'1%
-    profit_want = 0.01
+    profit_loss_rate = 0.01
 
 
-    buyAction_PercProfit(symbolBuy, profit_want)
+    buyAction_PercProfit(symbolBuy, profit_loss_rate)
 
     checkOrdersTotal()
 
