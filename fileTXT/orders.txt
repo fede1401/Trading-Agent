@@ -1,0 +1,157 @@
+In MetaTrader 5 (MT5), il termine "orders" (ordini) si riferisce a tutte le operazioni 
+di trading che un trader può eseguire sulla piattaforma. Questi ordini possono includere 
+sia gli acquisti (buy) che le vendite (sell). Gli ordini possono essere di diversi tipi, 
+e ciascuno di essi serve a specifici scopi nel processo di trading.
+
+### Tipi di Ordini in MT5
+
+1. **Market Order**:
+   - **Buy**: Un ordine di acquisto al prezzo di mercato corrente.
+   - **Sell**: Un ordine di vendita al prezzo di mercato corrente.
+
+2. **Pending Order**:
+   - **Buy Limit**: Un ordine per acquistare a un prezzo inferiore rispetto al prezzo di mercato corrente.
+   - **Sell Limit**: Un ordine per vendere a un prezzo superiore rispetto al prezzo di mercato corrente.
+   - **Buy Stop**: Un ordine per acquistare a un prezzo superiore rispetto al prezzo di mercato corrente.
+   - **Sell Stop**: Un ordine per vendere a un prezzo inferiore rispetto al prezzo di mercato corrente.
+   - **Buy Stop Limit**: Una combinazione di un ordine Buy Stop e Buy Limit.
+   - **Sell Stop Limit**: Una combinazione di un ordine Sell Stop e Sell Limit.
+
+3. **Orders di Stop Loss e Take Profit**:
+   - **Stop Loss**: Un ordine per chiudere una posizione a un prezzo specifico per limitare una perdita.
+   - **Take Profit**: Un ordine per chiudere una posizione a un prezzo specifico per garantire un profitto.
+
+### Esecuzione di Ordini con `MetaTrader5` in Python
+
+Utilizzando la libreria `MetaTrader5` in Python, puoi inviare diversi tipi di ordini. 
+Ecco come eseguire un ordine di acquisto (buy) e un ordine di vendita (sell) al prezzo di mercato corrente:
+
+#### Inviare un Ordine di Acquisto (Buy Order)
+
+```python
+import MetaTrader5 as mt5
+
+# Inizializzare MetaTrader 5
+if not mt5.initialize():
+    print("MetaTrader5 initialization failed")
+    mt5.shutdown()
+
+# Connettersi all'account (sostituisci con le tue credenziali)
+account = 12345678
+password = "tuapassword"
+server = "tuoserver"
+
+if not mt5.login(account, password, server):
+    print("Login failed")
+    mt5.shutdown()
+else:
+    print("Login successful")
+
+# Definire il simbolo e il volume dell'ordine
+symbol = "AAPL"
+volume = 1.0
+
+# Selezionare il simbolo
+if not mt5.symbol_select(symbol, True):
+    print(f"Failed to select {symbol}")
+    mt5.shutdown()
+
+# Ottenere il prezzo attuale
+symbol_info_tick = mt5.symbol_info_tick(symbol)
+
+# Definire l'ordine di acquisto
+order_request = {
+    "action": mt5.TRADE_ACTION_DEAL,
+    "symbol": symbol,
+    "volume": volume,
+    "type": mt5.ORDER_TYPE_BUY,
+    "price": symbol_info_tick.ask,
+    "deviation": 10,
+    "magic": 234000,
+    "comment": "Python script buy order",
+    "type_time": mt5.ORDER_TIME_GTC,
+    "type_filling": mt5.ORDER_FILLING_IOC,
+}
+
+# Inviare l'ordine
+result = mt5.order_send(order_request)
+
+# Controllare il risultato dell'ordine
+if result.retcode != mt5.TRADE_RETCODE_DONE:
+    print(f"Order send failed, retcode={result.retcode}")
+    print(f"Result: {result}")
+else:
+    print(f"Order send successfully, {result}")
+
+# Chiudere la connessione
+mt5.shutdown()
+```
+
+#### Inviare un Ordine di Vendita (Sell Order)
+
+```python
+import MetaTrader5 as mt5
+
+# Inizializzare MetaTrader 5
+if not mt5.initialize():
+    print("MetaTrader5 initialization failed")
+    mt5.shutdown()
+
+# Connettersi all'account (sostituisci con le tue credenziali)
+account = 12345678
+password = "tuapassword"
+server = "tuoserver"
+
+if not mt5.login(account, password, server):
+    print("Login failed")
+    mt5.shutdown()
+else:
+    print("Login successful")
+
+# Definire il simbolo e il volume dell'ordine
+symbol = "AAPL"
+volume = 1.0
+
+# Selezionare il simbolo
+if not mt5.symbol_select(symbol, True):
+    print(f"Failed to select {symbol}")
+    mt5.shutdown()
+
+# Ottenere il prezzo attuale
+symbol_info_tick = mt5.symbol_info_tick(symbol)
+
+# Definire l'ordine di vendita
+order_request = {
+    "action": mt5.TRADE_ACTION_DEAL,
+    "symbol": symbol,
+    "volume": volume,
+    "type": mt5.ORDER_TYPE_SELL,
+    "price": symbol_info_tick.bid,
+    "deviation": 10,
+    "magic": 234000,
+    "comment": "Python script sell order",
+    "type_time": mt5.ORDER_TIME_GTC,
+    "type_filling": mt5.ORDER_FILLING_IOC,
+}
+
+# Inviare l'ordine
+result = mt5.order_send(order_request)
+
+# Controllare il risultato dell'ordine
+if result.retcode != mt5.TRADE_RETCODE_DONE:
+    print(f"Order send failed, retcode={result.retcode}")
+    print(f"Result: {result}")
+else:
+    print(f"Order send successfully, {result}")
+
+# Chiudere la connessione
+mt5.shutdown()
+```
+
+### Conclusione
+
+In MT5, gli "orders" (ordini) si riferiscono a tutte le operazioni di trading che 
+un trader può eseguire, comprese le operazioni di acquisto (buy) e di vendita (sell). 
+Utilizzando la libreria `MetaTrader5` in Python, è possibile inviare vari tipi 
+di ordini per gestire le proprie posizioni di trading. Gli esempi forniti mostrano 
+come eseguire ordini di acquisto e vendita al prezzo di mercato corrente.
