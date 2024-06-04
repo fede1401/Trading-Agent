@@ -12,7 +12,7 @@ def checkSymbol(symbol):
     symbol_info = mt5.symbol_info(symbol)
     
     if symbol_info is None:
-        print(symbolBuy, "not found, can't call order_check()")  
+        print(symbol, "not found, can't call order_check()")  
         closeConnectionMt5.closeConnection()
         quit()
 
@@ -28,6 +28,48 @@ def checkSymbol(symbol):
 
 
     return symbol_info
+
+
+def buy_action(symbol):
+    symbol_info = checkSymbol(symbol)
+
+    # get account currency
+    account_currency=mt5.account_info().currency
+    print("Account currency:",account_currency)
+
+    # ottenuto prezzo di acquisto corrente del seguente simbolo
+    price = mt5.symbol_info_tick(symbol).ask
+
+    # Calcola il volume minimo e il passo di volume
+    min_volume = symbol_info.volume_min
+    volume_step = symbol_info.volume_step
+    volume = min_volume
+
+    print(f"min_volume: {min_volume}, volume_step:{volume_step}, vol: {volume}\n")
+
+    # Creazione dell'ordine
+    request = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "symbol": symbol,
+        "volume": volume,
+        "type": mt5.ORDER_TYPE_BUY,
+        "price": price,
+        "sl": 0,
+        "tp": 0,
+        "deviation": 10,
+        "magic": 234000,
+        "comment": "python script open",
+        "type_time": mt5.ORDER_TIME_GTC,
+        "type_filling": mt5.ORDER_FILLING_IOC,
+    }
+
+    # send a trading request
+    result = mt5.order_send(request)
+
+    # check the execution result
+    checkEsecutionOrder(symbol_info=symbol_info, price=price, result=result, request=request)
+    return
+
 
 
 """
@@ -113,6 +155,48 @@ def buyAction_PercProfit(symbol, profit_loss_rate):
     # check the execution result
     checkEsecutionOrder(symbol_info=symbol_info, price=price, result=result, request=request)
     return 
+
+
+
+def sell_Action(symbol):
+    symbol_info = checkSymbol(symbol)
+
+    # get account currency
+    account_currency=mt5.account_info().currency
+    print("Account currency:",account_currency)
+
+    # ottenuto prezzo di acquisto corrente del seguente simbolo
+    price = mt5.symbol_info_tick(symbol).ask
+
+    # Calcola il volume minimo e il passo di volume
+    min_volume = symbol_info.volume_min
+    volume_step = symbol_info.volume_step
+    volume = min_volume
+
+    print(f"min_volume: {min_volume}, volume_step:{volume_step}, vol: {volume}\n")
+
+    # Creazione dell'ordine
+    request = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "symbol": symbol,
+        "volume": volume,
+        "type": mt5.ORDER_TYPE_SELL,
+        "price": price,
+        "sl": 0,
+        "tp": 0,
+        "deviation": 10,
+        "magic": 234000,
+        "comment": "python script open",
+        "type_time": mt5.ORDER_TIME_GTC,
+        "type_filling": mt5.ORDER_FILLING_IOC,
+    }
+
+    # send a trading request
+    result = mt5.order_send(request)
+
+    # check the execution result
+    checkEsecutionOrder(symbol_info=symbol_info, price=price, result=result, request=request)
+    return
 
 
 
