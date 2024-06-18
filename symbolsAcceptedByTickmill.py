@@ -2,6 +2,7 @@ import csv
 import MetaTrader5 as mt5
 import login, variableLocal
 import pandas as pd
+import time
 
 
 def symbolsNasdaqCSV():    
@@ -18,13 +19,17 @@ def symbolsNasdaqCSV():
 
     return symbols
     
-
+# I time permettevano di controllare i vari simboli
 def getSymbolsAcceptedByTickmill():
     symbols = symbolsNasdaqCSV()
 
     symbolsAccepted = []
     for s in symbols:
+        #print(s)
         symbol_info = mt5.symbol_info(s)
+
+        #print(f'{s}: {symbol_info}\n\n')
+        #time.sleep(3)
 
         if symbol_info == None:
             continue
@@ -39,16 +44,22 @@ def getSymbolsAcceptedByTickmill():
 
                 else:
                     symbolsAccepted.append(s)
+                    #print(symbolsAccepted)
+                    #time.sleep(3)
             
             else:
                 symbolsAccepted.append(s)
+                #print(symbolsAccepted)
+                #time.sleep(3)
+
+            
+
     return symbolsAccepted        
 
 
 def getSymbolsCapDesc():
-    symbolsTotal = symbolsNasdaqCSV()
 
-    symbolsAccepted = getSymbolsAcceptedByTickmill(symbolsTotal)
+    symbolsAccepted = getSymbolsAcceptedByTickmill()
     print(symbolsAccepted)
 
     diz = dict()
@@ -76,7 +87,7 @@ def getSymbolsCapDesc():
         key_diz = list(diz.keys())
 
             
-    print(key_diz)
+    #print(key_diz)
     print(len(key_diz))
 
     # print("Intersect:")
@@ -112,5 +123,5 @@ if __name__ == '__main__':
     symbolsAccepted = getSymbolsAcceptedByTickmill()
     print(len(symbolsAccepted))
 
-    getSymbolsCapDesc()
+    #getSymbolsCapDesc()
 

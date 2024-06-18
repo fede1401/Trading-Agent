@@ -1,6 +1,7 @@
 import MetaTrader5 as mt5
 from datetime import datetime
 import login, closeConnectionMt5, variableLocal
+import logging
 
 
 def getCurrentMarketPrice(symbol):
@@ -37,8 +38,12 @@ def buy_action(symbol):
     account_currency=mt5.account_info().currency
     print("Account currency:",account_currency)
 
-    # ottenuto prezzo di acquisto corrente del seguente simbolo
-    price = mt5.symbol_info_tick(symbol).ask
+    # ottenere il prezzo di acquisto corrente del simbolo
+    tick_info = mt5.symbol_info_tick(symbol)
+    if tick_info is None:
+        logging.error(f"Errore nel recupero delle informazioni di tick per {symbol}.")
+        return None
+    price = tick_info.ask
 
     # Calcola il volume minimo e il passo di volume
     min_volume = symbol_info.volume_min
@@ -54,8 +59,6 @@ def buy_action(symbol):
         "volume": volume,
         "type": mt5.ORDER_TYPE_BUY,
         "price": price,
-        "sl": 0,
-        "tp": 0,
         "deviation": 10,
         "magic": 234000,
         "comment": "python script open",
@@ -66,9 +69,11 @@ def buy_action(symbol):
     # send a trading request
     result = mt5.order_send(request)
 
+    logging.info(f"Result: {result}")
+
     # check the execution result
     checkEsecutionOrder(symbol_info=symbol_info, price=price, result=result, request=request)
-    return
+    return result
 
 
 

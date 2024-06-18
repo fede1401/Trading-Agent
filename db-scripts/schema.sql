@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS nasdaq_actions (
 
 CREATE TABLE IF NOT EXISTS  Purchase (
     date TIMESTAMP NOT NULL,
+    ticket VARCHAR(100) NOT NULL,
+    volume INTEGER NOT NULL,
     symbol VARCHAR (10) NOT NULL,
     price DOUBLE PRECISION NOT NULL,
     PRIMARY KEY(date, symbol)
@@ -29,6 +31,8 @@ CREATE TABLE IF NOT EXISTS  Purchase (
 
 CREATE TABLE IF NOT EXISTS  Sale (
     date TIMESTAMP NOT NULL,
+    ticket VARCHAR(100) NOT NULL,
+    volume INTEGER NOT NULL,
     symbol VARCHAR (10) NOT NULL,
     priceSale DOUBLE PRECISION NOT NULL,
     pricePurchase  DOUBLE PRECISION NOT NULL,
@@ -39,8 +43,14 @@ CREATE TABLE IF NOT EXISTS  Sale (
 );
 
 
+CREATE TYPE stateAgent AS ENUM ('PURCHASE', 'SALE', 'WAIT');
+
+
+
 CREATE TABLE IF NOT EXISTS  DataTrader (
     date TIMESTAMP NOT NULL,
+    stAgent stateAgent,
+    initialBalance DOUBLE PRECISION NOT NULL,
     balance DOUBLE PRECISION NOT NULL,
     profitUSD DOUBLE PRECISION NOT NULL,
     profitPerc DOUBLE PRECISION NOT NULL,

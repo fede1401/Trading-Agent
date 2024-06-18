@@ -13,17 +13,19 @@ def convert_numpy_to_python(value):
 
 
 
-def insertInPurchase (date, symbol, price, cur, conn):
+def insertInPurchase (date, ticket, volume, symbol, price, cur, conn):
     if cur is not None and conn is not None:
         print("\nConnessione al database nasdaq_actions avvenuta con successo.\n\n\n")
         
         try:
             cur.execute(
-                "INSERT INTO Purchase (date, symbol, price) "
-                "VALUES (%s, %s, %s) "
+                "INSERT INTO Purchase (date, ticket, volume, symbol, price) "
+                "VALUES (%s, %s, %s, %s, %s) "
                 "ON CONFLICT (date, symbol) DO NOTHING",
                 (
-                    datetime.fromtimestamp(date),
+                    date,
+                    ticket,
+                    convert_numpy_to_python(volume),
                     symbol,
                     convert_numpy_to_python(price)
                 )
@@ -35,22 +37,24 @@ def insertInPurchase (date, symbol, price, cur, conn):
         conn.commit()
             
         print("Dati salvati nel db.\n\n\n")
-        cur.close()
-        conn.close()
+        #cur.close()
+        #conn.close()
 
 
 
-def insertInSale (date, symbol, priceSale, pricePurchase, profitUSD, profitPerc, time_for_profit, cur, conn):
+def insertInSale (date, ticket, volume, symbol, priceSale, pricePurchase, profitUSD, profitPerc, time_for_profit, cur, conn):
     if cur is not None and conn is not None:
         print("\nConnessione al database nasdaq_actions avvenuta con successo.\n\n\n")
         
         try:
             cur.execute(
-                "INSERT INTO Sale (date, symbol, priceSale, pricePurchase, profitUSD, profitPerc, time_for_profit)"
-                "VALUES (%s, %s, %s, %s, %s, %s, %s) "
+                "INSERT INTO Sale (date, ticket, volume, symbol, priceSale, pricePurchase, profitUSD, profitPerc, time_for_profit)"
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
                 "ON CONFLICT (date, symbol) DO NOTHING",
                 (
-                    datetime.fromtimestamp(date),
+                    date,
+                    ticket,
+                    convert_numpy_to_python(volume), 
                     symbol,
                     convert_numpy_to_python(priceSale),
                     convert_numpy_to_python(pricePurchase),
@@ -66,22 +70,24 @@ def insertInSale (date, symbol, priceSale, pricePurchase, profitUSD, profitPerc,
         conn.commit()
             
         print("Dati salvati nel db.\n\n\n")
-        cur.close()
-        conn.close()
+        #cur.close()
+        #conn.close()
 
 
 
-def insertInDataTrader(date, balance, profitUSD, profitPerc, deposit, credit, cur, conn):
+def insertInDataTrader(date, stateAg, initialBalance, balance, profitUSD, profitPerc, deposit, credit, cur, conn):
     if cur is not None and conn is not None:
         print("\nConnessione al database nasdaq_actions avvenuta con successo.\n\n\n")
         
         try:
             cur.execute(
-                "INSERT INTO DataTrader (date, balance, profitUSD, profitPerc, deposit, credit) "
-                "VALUES (%s, %s, %s, %s, %s, %s) "
+                "INSERT INTO DataTrader (date, stAgent, initialBalance, balance, profitUSD, profitPerc, deposit, credit) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
                 "ON CONFLICT (date) DO NOTHING",
                 (
-                    datetime.fromtimestamp(date),
+                    date,
+                    stateAg.name, 
+                    convert_numpy_to_python(initialBalance),
                     convert_numpy_to_python(balance),
                     convert_numpy_to_python(profitUSD),
                     convert_numpy_to_python(profitPerc),
@@ -96,5 +102,5 @@ def insertInDataTrader(date, balance, profitUSD, profitPerc, deposit, credit, cu
         conn.commit()
             
         print("Dati salvati nel db.\n\n\n")
-        cur.close()
-        conn.close()
+        #cur.close()
+        #conn.close()

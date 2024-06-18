@@ -4,7 +4,7 @@ from datetime import datetime
 import psycopg2 
 import numpy as np
 import closeConnectionMt5, login, connectDB, downloadData
-
+import logging
 
 
 
@@ -44,6 +44,7 @@ def insert_data(symbol, time_frame, rates, cur):
 
 def downloadInsertDB_data(symbol, timeframe, start_date, end_date):
     # Ottenere i dati storici
+    logging.info("Entrato nel metodo")
     rates = mt5.copy_rates_range(symbol, timeframe, start_date, end_date)
 
     # Controllare se abbiamo ottenuto i dati
