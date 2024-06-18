@@ -3,7 +3,7 @@ import MetaTrader5 as mt5
 from datetime import datetime
 import psycopg2 
 import numpy as np
-import closeConnectionMt5, login_mt5, connectDB, downloadData
+import closeConnectionMt5, login, connectDB, downloadData
 
 
 

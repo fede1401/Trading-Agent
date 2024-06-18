@@ -7,15 +7,6 @@ from datetime import datetime
 # vengono scritte su un file le informazioni dell'account e della piattaforma MetaTrader5
 
 
-############ variabili programma ###################
-# path = 'C:\\Program Files\\MetaTrader 5\\terminal64.exe'
-# login = 25114472
-# password = 'j8+fCg&E2A_('
-# server = 'TickmillEU-Demo'
-#############################################
-
-
-
 def login_metaTrader5(account, password, server):
     if not mt5.initialize(): # Questa funzione inizializza la libreria MetaTrader 5.
         print("Failed to initialize, error code: ", mt5.last_error())

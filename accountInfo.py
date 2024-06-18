@@ -1,13 +1,13 @@
 import MetaTrader5 as mt5
 from datetime import datetime
-import login_mt5, closeConnectionMt5, variableLocal, downloadAndInsertDataDB, info_order_send
+import login, closeConnectionMt5, variableLocal, downloadAndInsertDataDB, info_order_send
 import psycopg2
 import time
 import random
 
 
 def get_account_info():
-    login_mt5.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
+    login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
 
     account_info_dict = mt5.account_info()._asdict()
     for prop in account_info_dict:
@@ -18,7 +18,7 @@ def get_account_info():
 
 
 def get_balance_account():
-    login_mt5.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
+    login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
 
     account_info_dict = mt5.account_info()._asdict()
     for prop in account_info_dict:

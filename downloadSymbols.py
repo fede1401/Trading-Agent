@@ -2,10 +2,10 @@ import MetaTrader5 as mt5
 from datetime import datetime
 import psycopg2 # https://www.youtube.com/watch?v=miEFm1CyjfM
 
-import login_mt5, closeConnectionMt5, downloadData, variableLocal
+import login, closeConnectionMt5, downloadData, variableLocal
 
 
-login_mt5.login_metaTrader5(variableLocal.login, variableLocal.password, variableLocal.server)
+login.login_metaTrader5(variableLocal.login, variableLocal.password, variableLocal.server)
 
 
 ############ Ottenimento dati Apple e scrittura su file esterno ###################

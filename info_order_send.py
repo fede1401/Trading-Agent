@@ -1,6 +1,6 @@
 import MetaTrader5 as mt5
 from datetime import datetime
-import login_mt5, closeConnectionMt5, variableLocal
+import login, closeConnectionMt5, variableLocal
 
 
 def getCurrentMarketPrice(symbol):
@@ -274,7 +274,7 @@ def getActiveOrders():
 
 
 if __name__ == '__main__':
-    login_mt5.login_metaTrader5(account=variableLocal.account , password=variableLocal.password, server=variableLocal.server)
+    login.login_metaTrader5(account=variableLocal.account , password=variableLocal.password, server=variableLocal.server)
 
     #symbol = ["AAPL", "TSLA", "INTC"]
     #for s in symbol:

@@ -2,7 +2,7 @@ import MetaTrader5 as mt5
 from datetime import datetime
 import psycopg2 # https://www.youtube.com/watch?v=miEFm1CyjfM
 import numpy as np
-import closeConnectionMt5, login_mt5, connectDB, downloadData, downloadAndInsertDataDB, variableLocal
+import closeConnectionMt5, login, connectDB, downloadData, downloadAndInsertDataDB, variableLocal
 
 
 ############################################
@@ -21,7 +21,7 @@ file = 'dati_Apple.txt'
 
 
 def main():
-    if login_mt5.login_metaTrader5(variableLocal.account, variableLocal.password, variableLocal.server):
+    if login.login_metaTrader5(variableLocal.account, variableLocal.password, variableLocal.server):
         downloadAndInsertDataDB.downloadInsertDB_data(symbol, timeframe, start_date, end_date)
         closeConnectionMt5.closeConnection()
 
