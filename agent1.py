@@ -10,39 +10,6 @@ import logging
 
 
 
-# def main():
-#     login_mt5.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
-
-#     # Specificare l'intervallo di tempo di cui prendere i dati
-#     start_date = datetime(1971, 2, 8) # nascita indice nasdaq composite contenente tutte le azioni di tutte le società quotate in borsa nasdaq.
-#     end_date = datetime.now()
-
-#     while (True):
-    
-#         for symbol in symbols:
-#             print(symbol)
-#             # verifico se il simbolo è esistente ed è presente nel MarketWatch, se non lo è lo aggiungo
-#             info_order_send.checkSymbol(symbol)
-
-#             # scarico i dati tramite la funzione copy_rates_range e li inserisco nel database
-#             downloadAndInsertDataDB.downloadInsertDB_data(symbol, timeframe, start_date, end_date)
-
-
-#         print("\nsleep!\n")
-#         print(datetime.now())
-        
-#         # sleep di 1 giorno
-#         time.sleep(86400)
-
-#         start_date = end_date
-#         end_date = datetime.now()
-#         print(f"\nStart date: {start_date}\n")
-#         print(f"End date: {end_date}\n")
-
-
-#     closeConnectionMt5.closeConnection()
-#     return 
-
 def main():
     # Configura il logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -52,27 +19,40 @@ def main():
     try:
         login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
 
-        # Specificare il simbolo dell'azione (ad esempio, 'AAPL' per Apple, 'NFLX' per Netflix)
+        # Specificare il simbolo dell'azione: in questo caso prendiamo ogni simbolo del Nasdaq accettato dal broket TickMill (ad esempio, 'AAPL' per Apple, 'NFLX' per Netflix)
         symbols = symbolsAcceptedByTickmill.getSymbolsAcceptedByTickmill()
         
-        # Specificare l'intervallo di tempo di cui prendere i dati
-        start_date = datetime(1971, 2, 8) # nascita indice NASDAQ composite
-        end_date = datetime.now()
+        # Specificare l'intervallo di tempo di cui prendere i dati:
+            # da un'analisi ho notato che dall'inizio della nascita dell'indice NASDAQ Composite fino al 2017/09/18 i dati ci sono ogni giorno, 
+            # dopo di che è necessario specificare un intervallo ogni 2 anni altrimenti non vengono trovati i dati
+        #start_date = datetime(1971, 2, 8) # nascita indice NASDAQ composite
+        #end_date = datetime(2017, 9, 18)
+
+        for symbol in symbols:
+            logging.info(f"Processing symbol: {symbol}")
+
+            info_order_send.checkSymbol(symbol)
+                
+            logging.info("Scaricamento dati 1 !\n")
+
+            # Scarico i dati tramite la funzione copy_rates_range e li inserisco nel database
+            downloadAndInsertDataDB.downloadInsertDB_data(symbol, mt5.TIMEFRAME_D1, datetime(1971, 2, 8), datetime(2017, 9, 18))
+            downloadAndInsertDataDB.downloadInsertDB_data(symbol, mt5.TIMEFRAME_M15, datetime(2017, 9, 18), datetime(2020, 1, 1))
+            downloadAndInsertDataDB.downloadInsertDB_data(symbol, mt5.TIMEFRAME_M15, datetime(2020, 1, 1), datetime(2022, 1, 1))
+
 
         while True:
+            start_date = datetime(2022, 1, 1)
+            end_date = datetime.now()
+            
             for symbol in symbols:
                 logging.info(f"Processing symbol: {symbol}")
 
                 info_order_send.checkSymbol(symbol)
                 
-                # # Verifico se il simbolo è esistente ed è presente nel MarketWatch, se non lo è lo aggiungo
-                # if not info_order_send.checkSymbol(symbol):
-                #     logging.warning(f"Symbol {symbol} not found, skipping.")
-                #     continue
-
                 logging.info("Scaricamento dati !\n")
                 # Scarico i dati tramite la funzione copy_rates_range e li inserisco nel database
-                downloadAndInsertDataDB.downloadInsertDB_data(symbol,  mt5.TIMEFRAME_H6, start_date, end_date)
+                downloadAndInsertDataDB.downloadInsertDB_data(symbol, mt5.TIMEFRAME_M15, start_date, end_date)
 
                 
             logging.info("Dormi per un giorno.")
@@ -97,5 +77,15 @@ if __name__ == '__main__':
 
     # Specificare il timeframe (ad esempio, mt5.TIMEFRAME_D1 per dati giornalieri, mt5.TIMEFRAME_M15 ogni 15 minuti)
     #timeframe = mt5.TIMEFRAME_M15
+
+    #login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
+
+    #downloadAndInsertDataDB.downloadInsertDB_data("AAPL", mt5.TIMEFRAME_D1, datetime(1971, 2, 8), datetime(2017, 9, 18))
+    #downloadAndInsertDataDB.downloadInsertDB_data("AAPL", mt5.TIMEFRAME_M15, datetime(2017, 9, 18), datetime(2020, 1, 1))
+    #downloadAndInsertDataDB.downloadInsertDB_data("AAPL", mt5.TIMEFRAME_M15, datetime(2020, 1, 1), datetime(2022, 1, 1))
+    #downloadAndInsertDataDB.downloadInsertDB_data("AAPL", mt5.TIMEFRAME_M15, datetime(2022, 1, 1), datetime.now())
+
+    #rates = mt5.copy_rates_range("AAPL", mt5.TIMEFRAME_M15, datetime(2018, 10, 1), datetime(2018, 10, 30))
+    #print(rates)
         
     main()
