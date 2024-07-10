@@ -9,6 +9,18 @@ import numpy as np
 import logging
 
 
+"""
+Ecco alcune possibili cause per cui non vengono selezionati tutti i dati se l'intervallo di tempo è superiore a 2 anni:
+
+- Limitazioni del Server del Broker: Il server del broker potrebbe non essere in grado di restituire 
+    tutti i dati richiesti in un'unica chiamata se l'intervallo di tempo è troppo lungo.
+- Limitazioni dell'API di MT5: L'API di MT5 potrebbe avere limiti sulla quantità di dati che 
+    può restituire in una singola chiamata.
+- Problemi di Prestazioni: Richiedere troppi dati in una sola volta può causare problemi di prestazioni, 
+    sia sul lato del client che del server.
+
+"""
+
 
 def main():
     # Configura il logging
@@ -19,7 +31,7 @@ def main():
     try:
         login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
 
-        # Specificare il simbolo dell'azione: in questo caso prendiamo ogni simbolo del Nasdaq accettato dal broket TickMill (ad esempio, 'AAPL' per Apple, 'NFLX' per Netflix)
+        # ottenimento delle azioni del Nasdaq accettate dal broker TickMill.
         symbols = symbolsAcceptedByTickmill.getSymbolsAcceptedByTickmill()
         
         # Specificare l'intervallo di tempo di cui prendere i dati:
@@ -87,5 +99,5 @@ if __name__ == '__main__':
 
     #rates = mt5.copy_rates_range("AAPL", mt5.TIMEFRAME_M15, datetime(2018, 10, 1), datetime(2018, 10, 30))
     #print(rates)
-        
+    
     main()
