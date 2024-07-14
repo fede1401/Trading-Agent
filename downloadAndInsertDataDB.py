@@ -1,6 +1,6 @@
 
 import MetaTrader5 as mt5
-from datetime import datetime
+from datetime import datetime, timedelta
 import psycopg2 
 import numpy as np
 import closeConnectionMt5, login, connectDB, downloadData
@@ -20,6 +20,9 @@ def insert_data(symbol, time_frame, rates, cur):
     for rate in rates:
         print(rate)
         try:
+            # Sottrai 2 ore da rate['time'] poiché ho notato che sul grafico 
+            time_value = datetime.fromtimestamp(rate['time']) - timedelta(hours=2)
+
             cur.execute(
                 "INSERT INTO nasdaq_actions (symbol, time_frame, time_value, open_price, high_price, low_price, close_price, tick_volume, spread, real_volume) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
@@ -27,7 +30,7 @@ def insert_data(symbol, time_frame, rates, cur):
                 (
                     symbol,
                     time_frame,
-                    datetime.fromtimestamp(rate['time']),
+                    time_value,
                     convert_numpy_to_python(rate['open']),
                     convert_numpy_to_python(rate['high']),
                     convert_numpy_to_python(rate['low']),

@@ -38,13 +38,25 @@ def main():
         if last_state:
             # Se last_state contiene un valore, viene destrutturato in variabili individuali.
             (last_date, stateAgent, initial_budget, budget, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti) = last_state
-            logging.info(f"Ripresa stato dell'agent: {stateAgent}, Budget: {budget}, Profitto totale USD: {profitTotalUSD}, Profitto totale percentuale: {profitTotalPerc}, Budget Mantenimento: {budgetMantenimento}, Budget Investimenti: {budgetInvestimenti}")
+            logging.info(f"Ripresa stato dell'agent: {stateAgent}, Budget: {budget}, Profitto totale USD: {profitTotalUSD}, Profitto totale percentuale: {profitTotalPerc}, Budget Mantenimento: {budgetMantenimento}, Budget Investimenti: {budgetInvestimenti}\n")
 
-            # In questo modo se il programma viene bloccato e rimane nello stato INITIAL può entrare nel While e vedere se ci sono azioni da vendere
-            if stateAgent == 'INITIAL' :
-                logging.info(f"Cambio di stato da WAIT a SALE")
+            if stateAgent == 'WAIT':
+                stateAgent = agentState.AgentState.WAIT
+
+            if stateAgent == 'SALE':
                 stateAgent = agentState.AgentState.SALE
 
+            if stateAgent == 'PURCHASE':
+                stateAgent = agentState.AgentState.PURCHASE
+            
+            # In questo modo se il programma viene bloccato e rimane nello stato INITIAL può entrare nel While e vedere se ci sono azioni da vendere
+            if stateAgent == 'INITIAL':
+                logging.info(f"Cambio di stato da WAIT a SALE\n")
+                stateAgent = agentState.AgentState.SALE
+
+            logging.info(f"StateAgent: {stateAgent}\n")
+            
+                
         else:
             # Inizializza lo stato dell'agent se non ci sono dati precedenti
             budget = accountInfo.get_balance_account()
@@ -58,19 +70,25 @@ def main():
             stateAgent = agentState.AgentState.INITIAL
             
             insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-            logging.info(f"Budget iniziale: {budget}")
+            logging.info(f"Budget iniziale: {budget}\n")
             
             stateAgent = agentState.AgentState.SALE
 
-        # Il ciclo principale esegue le operazioni di trading basandosi sull'orario di apertura della borsa Nasdaq (09:30 - 16:00 orario di New York).
+        # Il ciclo principale esegue le operazioni di trading basandosi sull'orario di apertura della borsa Nasdaq (09:30 - 16:00 orario di New York), 
+        # poiché durante l'orario di chiusura non possono essere effettuate operazioni di acquisto e vendita.
+
+        # Possiamo interrompere il programma anche se si tratta della giornata di sabato e domenica.
         while True:
 
             start_time_open_nas, end_time_open_nas, current_time, datetime_NY = getCurrentTimeNY()
             
             if start_time_open_nas <= current_time < end_time_open_nas:
 
-                logging.info(f"Orario New York: {datetime_NY.hour}:{datetime_NY.minute}\n")                        
-                if stateAgent == 'SALE' :
+                logging.info(f"Orario New York: {datetime_NY.hour}:{datetime_NY.minute}\n")     
+                time_module.sleep(1)
+
+                if stateAgent == agentState.AgentState.SALE :
+                    logging.info(f"Entrato in Sale\n")
         
                     # Per tutte le azioni comprate rivendo quelle che sono salite del TP = 1% rispetto al prezzo di acquisto
                     for act in pool_Actions_Nasdaq:
@@ -80,7 +98,7 @@ def main():
                         if positions is not None:
                             for pos in positions:
                                         
-                                print(pos)
+                                logging.info(f"Lavoriamo con l'azione acquistata {act}\n")
                                         
                                 # Ottenimento prezzo di acquisto(open), prezzo corrente, id ticket e volume di azioni acquistate
                                 price_open = pos.price_open
@@ -89,6 +107,7 @@ def main():
                                 volume = pos.volume
 
                                 if price_current > price_open:
+                                    logging.info(f"Price current: {price_current} maggiore del prezzo di apertura: {price_open}\n")
 
                                     # Calcolo del profitto:
                                     profit = price_current - price_open
@@ -96,6 +115,9 @@ def main():
 
                                     # Rivendita con l'1 % di profitto
                                     if perc_profit > 0.01:
+                                        
+                                        logging.info(f"Si può vendere {act} poiché c'è un profitto del {perc_loss}\n")
+
                                         info_order_send.sell_Action(act)
 
                                         # aggiorno il budget
@@ -117,16 +139,45 @@ def main():
 
                                         insertDataDB.insertInDataTrader(datetime.now(), stateAgent ,initial_budget,  budget, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn) 
 
-                                        logging.info(f"Venduta azione {act}, profitto: {profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}")
+                                        logging.info(f"Venduta azione {act}, profitto: {profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n")
+                                
+                                
+                                if price_current < price_open:
+                                    
+                                    logging.info(f"Price current: {price_current} minore del prezzo di apertura: {price_open}\n")
+
+                                    # Calcolo della perdita
+                                    loss = price_open - price_current
+                                    perc_loss = loss / price_open
+
+                                    # Rivendita con il 2% di perdita
+                                    if perc_loss >= 0.02:
+
+                                        logging.info(f"Si può vendere {act} poiché c'è una perdita del {perc_loss}\n")
+
+                                        info_order_send.sell_Action(act)
+
+                                        # aggiorno il budget
+                                        budgetInvestimenti = budgetInvestimenti + price_current
+
+                                        insertDataDB.insertInSale(datetime.now(), ticket=ticket, volume=volume, symbol=act, priceSale=price_current, pricePurchase=price_open, profitUSD=loss, profitPerc=perc_loss, cur=cur, conn=conn)    
+
+                                        # Aggiornamento del budget dopo la vendita con inclusi i profitti
+                                        budget = accountInfo.get_balance_account() 
+
+                                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent ,initial_budget,  budget, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn) 
+
+                                        logging.info(f"Venduta azione {act}, perdita: {loss}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n")
 
 
-                    logging.info(f"Cambio di stato da SALE a PURCHASE")
+                    logging.info(f"Cambio di stato da SALE a PURCHASE\n")
                     stateAgent = agentState.AgentState.PURCHASE
 
 
                 ###### fine SALE
 
-                if stateAgent == 'PURCHASE':
+                if stateAgent == agentState.AgentState.PURCHASE :
+                    logging.info(f"Entrato in Purchase\n")
 
                     # Acquisto di azioni finché c'è budget
                     while budgetInvestimenti > 0:
@@ -136,15 +187,15 @@ def main():
                         # scelgo un'azione random dal pool
                         symbolRandom = random.randint(0, len(pool_Actions_Nasdaq)-1)
 
-                        logging.info(f"Simbolo scelto: {pool_Actions_Nasdaq[symbolRandom]}")
+                        logging.info(f"Simbolo scelto: {pool_Actions_Nasdaq[symbolRandom]}\n")
 
                         # compro l'azione corrispondente
                         result = info_order_send.buy_action(pool_Actions_Nasdaq[symbolRandom])
 
                         if result is not None:
-                            logging.info(f"Acquisto completato al prezzo: {result}")
+                            logging.info(f"Acquisto completato al prezzo: {result}\n")
                         else:
-                            logging.error("Acquisto fallito.")
+                            logging.error("Acquisto fallito.\n")
 
                         # aggiorno il budget    
                         #budgetInvestimenti = accountInfo.get_balance_account()
@@ -163,24 +214,26 @@ def main():
                         budget = accountInfo.get_balance_account() 
 
                         insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget,  budget, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-                        logging.info(f"Acquistata azione {pool_Actions_Nasdaq[symbolRandom]}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}")
+                        logging.info(f"Acquistata azione {pool_Actions_Nasdaq[symbolRandom]}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}\n")
 
-                    logging.info(f"Cambio di stato da PURCHASE a WAIT")
+                    logging.info(f"Cambio di stato da PURCHASE a WAIT\n")
                     stateAgent = agentState.AgentState.WAIT
 
 
                 ###### fine PURCHASE
 
                 # Il programma si interrompe per 15 minuti poi riparte
-                if stateAgent == 'WAIT':
+                if stateAgent == agentState.AgentState.WAIT :
+                    logging.info(f"Entrato in Wait\n")
 
                     insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-                    logging.info("Interruzione del programma per 15 minuti.")
+                    logging.info("Interruzione del programma per 15 minuti.\n")
                             
                     time_module.sleep(900)
 
-                    logging.info(f"Cambio di stato da WAIT a SALE")
+                    logging.info(f"Cambio di stato da WAIT a SALE\n")
                     stateAgent = agentState.AgentState.SALE
+                    logging.info(f"Stato agent: {stateAgent}\n")
 
                     
                 ###### fine WAIT
@@ -188,7 +241,7 @@ def main():
 
             # Se l'orario corrente della zona di New York non corrisponde all'orario di apertura della borsa del Nasdaq, allora:
             else:
-                logging.info("Orario non adatto per il trading.")
+                logging.info("Orario non adatto per il trading.\n")
                 
                 # Calcolo della pausa per l'apertura della Borsa del Nasdaq
 
@@ -264,7 +317,7 @@ def getCurrentTimeNY():
     # Get the current time in New York
     datetime_NY = datetime.now(tz_NY)
 
-    logging.info(f"Orario New York: {datetime_NY.hour}:{datetime_NY.minute}")
+    #logging.info(f"Orario New York: {datetime_NY.hour}:{datetime_NY.minute}")
 
     # Orario di apertura della borsa Nasdaq a New York: 9:30 - 16:00
     start_time_open_nas = time(9, 30)

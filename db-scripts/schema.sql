@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS  Sale (
     pricePurchase  DOUBLE PRECISION NOT NULL,
     profitUSD DOUBLE PRECISION NOT NULL,
     profitPerc  DOUBLE PRECISION NOT NULL,
-    --time_for_profit  DOUBLE PRECISION NOT NULL,
     PRIMARY KEY(date, symbol)
 );
 

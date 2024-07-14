@@ -187,8 +187,6 @@ def sell_Action(symbol):
         "volume": volume,
         "type": mt5.ORDER_TYPE_SELL,
         "price": price,
-        "sl": 0,
-        "tp": 0,
         "deviation": 10,
         "magic": 234000,
         "comment": "python script open",
@@ -211,7 +209,7 @@ def checkEsecutionOrder(symbol_info, price, result, request):
 
     # Controlla se l'ordine è stato eseguito correttamente (result.retcode torna il risultato dell'ordine)
     if result.retcode != mt5.TRADE_RETCODE_DONE:
-        print("2. order_send failed, retcode={}".format(result.retcode))
+        print(f"Order send failed, retcode={result.retcode}")
         
         # Mostra i dettagli del risultato dell'ordine in caso di fallimento:
             # converti il risultato in un dizionario e mostra ogni campo
