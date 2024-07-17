@@ -199,13 +199,13 @@ def sell_Action(symbol):
 
     # check the execution result
     checkEsecutionOrder(symbol_info=symbol_info, price=price, result=result, request=request)
-    return
+    return result.order
 
 
 
 def checkEsecutionOrder(symbol_info, price, result, request):
     # Verifica il risultato dell'esecuzione dell'ordine
-    print("1. order_send(): by {} {}\n\n".format(symbol_info, price))
+    print("\n1. order_send(): by {} {}\n\n".format(symbol_info, price))
 
     # Controlla se l'ordine è stato eseguito correttamente (result.retcode torna il risultato dell'ordine)
     if result.retcode != mt5.TRADE_RETCODE_DONE:
@@ -229,8 +229,8 @@ def checkEsecutionOrder(symbol_info, price, result, request):
         quit()
         
     # Mostra il risultato dell'ordine se è stato eseguito correttamente
-    print("\n\n2. order_send done, ", result)
-    print("   opened position with POSITION_TICKET={}\n\n".format(result.order))
+    print("2. order_send done, ", result)
+    print("   opened position with POSITION_TICKET={}\n".format(result.order))
 
     print("3. order_check()")
 

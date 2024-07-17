@@ -1,6 +1,6 @@
 import MetaTrader5 as mt5
 from datetime import datetime
-import login, closeConnectionMt5, variableLocal, downloadAndInsertDataDB, info_order_send
+import login, closeConnectionMt5, variableLocal, info_order_send
 import psycopg2
 import time
 import random

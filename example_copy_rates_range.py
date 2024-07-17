@@ -12,7 +12,7 @@ import logging
 if __name__ == '__main__':
 
     # Specificare il timeframe (ad esempio, mt5.TIMEFRAME_D1 per dati giornalieri, mt5.TIMEFRAME_M15 ogni 15 minuti)
-    timeframe = mt5.TIMEFRAME_M1
+    timeframe = mt5.TIMEFRAME_M15
 
     login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
     symbol = 'AAPL'
