@@ -1,7 +1,7 @@
 # Raccolta dei dati e inserimento nel database postgreSQL.
 
 import MetaTrader5 as mt5
-import login, closeConnectionMt5, variableLocal, info_order_send, symbolsAcceptedByTickmill, insertDataDB
+import session_management, info_order_send, symbolsAcceptedByTickmill, insertDataDB
 import psycopg2
 import time
 import numpy as np
@@ -85,10 +85,10 @@ def main():
         # connessione al database
         cur, conn = connectDB.connect_nasdaq()
 
-        login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
+        session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
 
         # Inserimento dei dati relativi al login nel database
-        insertDataDB.insertInLoginDate(variableLocal.name, variableLocal.account, variableLocal.server, cur, conn)
+        insertDataDB.insertInLoginDate(session_management.name, session_management.account, session_management.server, cur, conn)
 
         # ottenimento delle azioni del Nasdaq accettate dal broker TickMill.
         symbols = symbolsAcceptedByTickmill.getSymbolsAcceptedByTickmill()
@@ -206,7 +206,7 @@ def main():
     except Exception as e:
         logging.critical(f"Uncaught exception: {e}")
     finally:
-        closeConnectionMt5.closeConnection()
+        session_management.closeConnection()
         logging.info("Connessione chiusa e fine del trading agent.")
 
 

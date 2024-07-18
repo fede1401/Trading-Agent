@@ -1,37 +1,62 @@
 import MetaTrader5 as mt5
 from datetime import datetime
-import login, closeConnectionMt5, variableLocal, info_order_send
+import session_management, info_order_send
 import psycopg2
 import time
 import random
 
 
 def get_account_info():
-    login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
 
-    account_info_dict = mt5.account_info()._asdict()
-    for prop in account_info_dict:
-        print(f"{prop}: {account_info_dict[prop]}")
-    print()
+    # Ottieni informazioni sul conto
+    account_info = mt5.account_info()
 
-    return account_info_dict
+    if account_info is not None:
+        print(f"Balance: {account_info.balance}")
+        print(f"Equity: {account_info.equity}")
+        print(f"Margin: {account_info.margin}")
+        print(f"Free Margin: {account_info.margin_free}")
+        print(f"Margin Level: {account_info.margin_level}%")
+    else:
+        print("Failed to get account information")
+    
+    return account_info
 
 
 def get_balance_account():
-    login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
 
-    account_info_dict = mt5.account_info()._asdict()
-    for prop in account_info_dict:
-        if prop == 'balance':
-            balance = account_info_dict[prop]
-            print(f"{prop}: {balance}")
+    # Ottenimento informazioni sul conto 
+    account_info = mt5.account_info()
+    balance = account_info.balance
+    print(f"Balance: {balance}")
 
     return balance
-         
+
+
+def get_equity_account():
+
+    # Ottenimento informazioni sul conto 
+    account_info = mt5.account_info()
+    equity = account_info.equity
+    print(f"Equity: {equity}")
+
+    return equity
+
+
+def get_margin_account():
+
+    # Ottenimento informazioni sul conto 
+    account_info = mt5.account_info()
+    margin = account_info.margin
+    print(f"Margin: {margin}")
+
+    return margin
+
 
 
 if __name__ == '__main__':
     #get_account_info()
-    get_balance_account()
+    #get_balance_account()
+    get_account_info()
     #main()
 

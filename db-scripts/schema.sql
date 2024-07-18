@@ -64,11 +64,13 @@ CREATE TABLE IF NOT EXISTS  DataTrader (
     stAgent stateAgent,
     initialBalance DOUBLE PRECISION NOT NULL,
     balance DOUBLE PRECISION NOT NULL,
+    equity DOUBLE PRECISION NOT NULL,      -- balance che include profitti e perdite delle posizioni aperte
+    margin DOUBLE PRECISION NOT NULL,      -- denaro "bloccato" nel conto come garanzia per l'apertura di una posizione 
     profitUSD DOUBLE PRECISION NOT NULL,
     profitPerc DOUBLE PRECISION NOT NULL,
     lossUSD DOUBLE PRECISION NOT NULL,
     lossPerc DOUBLE PRECISION NOT NULL,
     deposit DOUBLE PRECISION NOT NULL,     -- per il valore dei guadagni di mantenimento
-    credit  DOUBLE PRECISION NOT NULL,  -- per il valore dei soldi da investire
+    credit  DOUBLE PRECISION NOT NULL,     -- per il valore dei soldi da investire (freee Margin in mt5.)
     PRIMARY KEY(date) 
 );

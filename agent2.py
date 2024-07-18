@@ -5,7 +5,7 @@
  
 import MetaTrader5 as mt5
 from datetime import datetime
-import login, closeConnectionMt5, variableLocal, info_order_send,symbolsAcceptedByTickmill, connectDB, accountInfo, insertDataDB, agentState
+import session_management, info_order_send,symbolsAcceptedByTickmill, connectDB, accountInfo, insertDataDB, agentState
 import psycopg2
 import time
 import random
@@ -25,10 +25,10 @@ def main():
     
     try:
         # connessione al server MetaTrader 5 e login e salvataggio nel db per lo storico dei login.
-        login.login_metaTrader5(account=variableLocal.account, password=variableLocal.password, server=variableLocal.server)
+        session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
         
         # Inserimento dei dati relativi al login nel database
-        insertDataDB.insertInLoginDate(variableLocal.name, variableLocal.account, variableLocal.server, cur, conn)
+        insertDataDB.insertInLoginDate(session_management.name, session_management.account, session_management.server, cur, conn)
 
         # ottenimento del 5% delle azioni del Nasdaq ordinate per capitalizzazione decrescente.
         pool_Actions_Nasdaq = symbolsAcceptedByTickmill.get5PercentSymbolsCapDesc()
@@ -40,7 +40,7 @@ def main():
 
         if last_state:
             # Se last_state contiene un valore, viene destrutturato in variabili individuali.
-            (last_date, stateAgent, initial_budget, budget, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti) = last_state
+            (last_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti) = last_state
             logging.info(f"Ripresa stato dell'agent: {stateAgent}, Budget: {budget}, Profitto totale USD: {profitTotalUSD}, Profitto totale percentuale: {profitTotalPerc}, Perdita totale USD: {lossTotalUSD}, Perdita totale percentuale: {lossTotalPerc}, Budget Mantenimento: {budgetMantenimento}, Budget Investimenti: {budgetInvestimenti}\n")
 
             if stateAgent == 'WAIT':
@@ -63,6 +63,8 @@ def main():
         else:
             # Inizializza lo stato dell'agent se non ci sono dati precedenti
             budget = accountInfo.get_balance_account()
+            equity = accountInfo.get_equity_account()
+            margin = accountInfo.get_margin_account()
             initial_budget = budget
             budgetInvestimenti = budget
 
@@ -74,7 +76,7 @@ def main():
 
             stateAgent = agentState.AgentState.INITIAL
             
-            insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+            insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
             logging.info(f"Budget iniziale: {budget}\n")
             
             stateAgent = agentState.AgentState.SALE
@@ -214,11 +216,13 @@ def main():
 
                                         # Aggiornamento del budget dopo la vendita con inclusi i profitti
                                         budget = accountInfo.get_balance_account() 
+                                        equity = accountInfo.get_equity_account()
+                                        margin = accountInfo.get_margin_account()
 
                                         profitTotalUSD += profit
                                         profitTotalPerc =  perc_profit
 
-                                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent ,initial_budget,  budget, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn) 
+                                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
                                         logging.info(f"Venduta azione {act}, profitto: {profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n")
                                         
@@ -253,11 +257,13 @@ def main():
 
                                         # Aggiornamento del budget dopo la vendita con inclusi i profitti
                                         budget = accountInfo.get_balance_account() 
+                                        equity = accountInfo.get_equity_account()
+                                        margin = accountInfo.get_margin_account()
 
                                         lossTotalUSD += loss
                                         lossTotalPerc =  perc_loss
 
-                                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent ,initial_budget,  budget, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc ,budgetMantenimento, budgetInvestimenti, cur, conn) 
+                                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
                                         logging.info(f"Venduta azione {act}, perdita: {loss}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n")
 
@@ -312,8 +318,10 @@ def main():
 
                         # Aggiornamento del budget dopo l'acquisto dell'azione
                         budget = accountInfo.get_balance_account() 
+                        equity = accountInfo.get_equity_account()
+                        margin = accountInfo.get_margin_account()
 
-                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget,  budget, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc ,budgetMantenimento, budgetInvestimenti, cur, conn)
+                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
                         logging.info(f"Acquistata azione {pool_Actions_Nasdaq[symbolRandom]}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}\n")
                         logging.info("---------------------------------------------------------------------------------\n\n")
 
@@ -330,7 +338,7 @@ def main():
                 if stateAgent == agentState.AgentState.WAIT :
                     logging.info(f"Agent entrato nello stato Wait\n")
 
-                    insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+                    insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
                     logging.info("Interruzione del programma per 15 minuti.\n")
                             
                     time_module.sleep(900)
@@ -366,7 +374,7 @@ def main():
                         target_time += timedelta(days=1)
 
                     stateAgent = agentState.AgentState.WAIT
-                    insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc ,budgetMantenimento, budgetInvestimenti, cur, conn)
+                    insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
                     # Il programma si interrompe fino all'apertura della borsa del Nasdaq
                     wait(target_time)
@@ -384,7 +392,7 @@ def main():
         logging.critical(f"Errore non gestito: {e}")
     
     finally:
-        closeConnectionMt5.closeConnection()
+        session_management.closeConnection()
         logging.info("Connessione chiusa e fine del trading agent.")
 
 

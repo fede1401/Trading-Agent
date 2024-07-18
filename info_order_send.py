@@ -1,48 +1,58 @@
 import MetaTrader5 as mt5
 from datetime import datetime
-import login, closeConnectionMt5, variableLocal
+import session_management
 import logging
 
-
+# Ottiene il prezzo di mercato corrente per un simbolo specificato.
 def getCurrentMarketPrice(symbol):
-    print(f"\n\nPrezzo di mercato corrente {symbol}: {mt5.symbol_info_tick(symbol).ask}\n\n")
+    current_market_price = mt5.symbol_info_tick(symbol).ask
+    print(f"\n\nPrezzo di mercato corrente {symbol}: {current_market_price}\n\n")
+    
+    return current_market_price
 
 
-
+# Controlla la disponibilità di un simbolo nel Market Watch di MetaTrader 5 e lo aggiunge se non è visibile.
 def checkSymbol(symbol):
+    # Ottiene i dati di uno specifico simbolo azionario
     symbol_info = mt5.symbol_info(symbol)
     
+    # Se i dati di un simbolo azionario sono nulli esci dal programma
     if symbol_info is None:
         print(symbol, "not found, can't call order_check()")  
-        closeConnectionMt5.closeConnection()
+        session_management.closeConnection()
         quit()
 
 
-    # if the symbol is unavailable in MarketWatch, add it
+    # Se il simbolo non è visibile nel Market Watch, lo aggiunge
     if not symbol_info.visible:
         print(symbol, "is not visible, trying to switch on")
         
+        # Prova ad aggiungere il simbolo al Market Watch
         if not mt5.symbol_select(symbol,True):
             print("symbol_select({}}) failed, exit",symbol)
-            closeConnectionMt5.closeConnection()
+            session_management.closeConnection()
             quit()
-
 
     return symbol_info
 
 
+# Esegue un'azione di acquisto per il simbolo specificato.
 def buy_action(symbol):
+    # Ottiene i dati di uno specifico simbolo azionario
     symbol_info = checkSymbol(symbol)
 
-    # get account currency
+    # Ottiene la valuta dell'account
     account_currency=mt5.account_info().currency
     print("Account currency:",account_currency)
 
-    # ottenere il prezzo di acquisto corrente del simbolo
+    # Ottiene il prezzo attuale di acquisto del simbolo
     tick_info = mt5.symbol_info_tick(symbol)
+
+    # Se non è possibile ottenere le informazioni di tick, esci dal programma
     if tick_info is None:
         logging.error(f"Errore nel recupero delle informazioni di tick per {symbol}.")
         return None
+    
     price = tick_info.ask
 
     # Calcola il volume minimo e il passo di volume
@@ -66,53 +76,26 @@ def buy_action(symbol):
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
 
-    # send a trading request
+    # Invia la richiesta di trading
     result = mt5.order_send(request)
 
     logging.info(f"Result: {result}")
 
-    # check the execution result
+    # Controlla il risultato dell'esecuzione dell'ordine    
     checkEsecutionOrder(symbol_info=symbol_info, price=price, result=result, request=request)
     return result
 
 
 
-"""
-Cosa Succede Quando il Prezzo Raggiunge lo Stop Loss o il Take Profit
-
-    Stop Loss: Se il prezzo di AAPL scende fino al livello dello stop loss (stopLoss), 
-    la posizione viene chiusa automaticamente da MetaTrader 5, vendendo le azioni a quel prezzo per limitare la perdita.
-
-    Take Profit: Se il prezzo di AAPL sale fino al livello del take profit (takeProfit), 
-    la posizione viene chiusa automaticamente da MetaTrader 5, vendendo le azioni a quel prezzo per bloccare il profitto.
-
-
-Ogni broker ha specifiche regole e limiti riguardanti i volumi minimi e massimi che possono essere negoziati in una singola operazione. 
-Ecco alcuni dettagli importanti da considerare:
-
-    Volume Minimo: È la quantità minima di asset che è possibile negoziare in una singola operazione. 
-    Se tenti di negoziare un volume inferiore a questo, l'ordine sarà rifiutato.
-     Ad esempio, se il volume minimo per un'azione è 1, non puoi acquistare meno di una singola azione.
-
-    Passo di Volume (Volume Step): È l'incremento minimo di volume con cui è possibile aumentare l'ordine.
-    Ad esempio, se il passo di volume è 0.1, puoi negoziare 1.0, 1.1, 1.2, ecc., ma non 1.05.
-    Ad esempio, se il volume step è 0.01, puoi aumentare il volume in incrementi di 0.01 (ad esempio, 1.01, 1.02, ecc.).
-    
-
-    Volume Massimo: È la quantità massima di asset che è possibile negoziare in una singola operazione. 
-    Questo è importante per evitare di piazzare ordini troppo grandi che potrebbero essere rifiutati.
-    Ad esempio, se il volume massimo per un'azione è 1000, non puoi acquistare più di 1000 azioni in una singola operazione.
-"""
-
-
+# Esegue un'azione di acquisto con specificazione di stop loss e take profit.
 def buyAction_PercProfit(symbol, profit_loss_rate):
     symbol_info = checkSymbol(symbol)
 
-    # get account currency
+    # Ottieni la valuta dell'account
     account_currency=mt5.account_info().currency
     print("Account currency:",account_currency)
 
-    # ottenuto prezzo di acquisto corrente del seguente simbolo
+    # Ottieni il prezzo di acquisto corrente del simbolo
     price = mt5.symbol_info_tick(symbol).ask
 
     # calcolo dello stop loss e takeProfit:
@@ -162,7 +145,9 @@ def buyAction_PercProfit(symbol, profit_loss_rate):
     return 
 
 
+# Chiude una posizione aperta per un simbolo specificato.
 def close_Position(symbol, position):    
+    # Verifica se la posizione è vuota
     if position is None or len(position) == 0:
         print(f"No positions found for {symbol}")
         return
@@ -200,7 +185,7 @@ def close_Position(symbol, position):
     return result.order
 
 
-
+# Esegue un'azione di vendita per un simbolo specificato.
 def sell_Action(symbol):
     symbol_info = checkSymbol(symbol)
 
@@ -290,24 +275,25 @@ def checkEsecutionOrder(symbol_info, price, result, request):
     return 
 
 
+# Verifica la presenza di ordini attivi nell'account.
 def checkOrdersTotal():
-    # check the presence of active orders
+    # Verifica la presenza di ordini attivi
     orders=mt5.orders_total()
-    if orders>0:
+    if orders > 0:
         print("Total orders=",orders)
     else:
         print("Orders not found")
  
 
-
+# Ottiene e visualizza gli ordini attivi per un simbolo specifico (es. AAPL).
 def getActiveOrders():
-    # display data on active orders on GBPUSD
+    # Ottiene e visualizza dati sugli ordini attivi su AAPL
     orders=mt5.orders_get(symbol="AAPL")
     if orders is None:
         print("No orders on AAPL, error code={}".format(mt5.last_error()))
     else:
         print("Total orders on AAPL:",len(orders))
-        # display all active orders
+        # Visualizza tutti gli ordini attivi
         for order in orders:
             print(order)
     print()
@@ -315,7 +301,7 @@ def getActiveOrders():
 
 
 if __name__ == '__main__':
-    login.login_metaTrader5(account=variableLocal.account , password=variableLocal.password, server=variableLocal.server)
+    session_management.login_metaTrader5(account=session_management.account , password=session_management.password, server=session_management.server)
 
     #symbol = ["AAPL", "TSLA", "INTC"]
     #for s in symbol:
