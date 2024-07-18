@@ -162,6 +162,44 @@ def buyAction_PercProfit(symbol, profit_loss_rate):
     return 
 
 
+def close_Position(symbol, position):    
+    if position is None or len(position) == 0:
+        print(f"No positions found for {symbol}")
+        return
+    
+    # Assumiamo che ci sia solo una posizione aperta per il simbolo
+    position_ticket = position.ticket
+    position_type = position.type
+    volume = position.volume
+
+    # Ottieni il prezzo corrente per il simbolo
+    price = mt5.symbol_info_tick(symbol).bid if position_type == mt5.ORDER_TYPE_BUY else mt5.symbol_info_tick(symbol).ask
+
+    # Creazione dell'ordine opposto per chiudere la posizione
+    order_type = mt5.ORDER_TYPE_SELL if position_type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY
+    
+    request = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "symbol": symbol,
+        "volume": volume,
+        "type": order_type,
+        "position": position_ticket,
+        "price": price,
+        "deviation": 10,
+        "magic": 234000,
+        "comment": "python script close",
+        "type_time": mt5.ORDER_TIME_GTC,
+        "type_filling": mt5.ORDER_FILLING_IOC,
+    }
+
+    # Invia la richiesta di trading
+    result = mt5.order_send(request)
+
+    # Verifica il risultato dell'esecuzione dell'ordine
+    checkEsecutionOrder(symbol_info=symbol, price=price, result=result, request=request)
+    return result.order
+
+
 
 def sell_Action(symbol):
     symbol_info = checkSymbol(symbol)

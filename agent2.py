@@ -197,7 +197,9 @@ def main():
                                         
                                         logging.info(f"Si può vendere {act} poiché c'è un profitto del {perc_profit}\n")
 
-                                        ticket_sale = info_order_send.sell_Action(act)
+                                        #ticket_sale = info_order_send.sell_Action(act)
+                                        ticket_sale = info_order_send.close_Position(act, position=pos)
+
 
                                         # aggiorno il budget
                                         budgetInvestimenti = budgetInvestimenti + price_open
@@ -241,7 +243,8 @@ def main():
 
                                         logging.info(f"Si può vendere {act} poiché c'è una perdita del {perc_loss}\n")
 
-                                        ticket_sale = info_order_send.sell_Action(act)
+                                        #ticket_sale = info_order_send.sell_Action(act)
+                                        ticket_sale = info_order_send.close_Position(act, position=pos)
 
                                         # aggiorno il budget
                                         budgetInvestimenti = budgetInvestimenti + price_current
