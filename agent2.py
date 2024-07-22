@@ -33,7 +33,7 @@ def main():
         # Ottenimento del 5% delle azioni del Nasdaq ordinate per capitalizzazione decrescente.
         pool_Actions_Nasdaq = symbolsAcceptedByTickmill.get5PercentSymbolsCapDesc()
 
-        # Recupera lo stato dell'agente nel database:
+        # Recupera l'ultimo stato dell'agent nel database:
         cur.execute("SELECT * FROM DataTrader ORDER BY date DESC LIMIT 1")
         last_state = cur.fetchone()
 
