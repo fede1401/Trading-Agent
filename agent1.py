@@ -78,24 +78,25 @@ Copertura dei Casi
 def main():
     # Configura il logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-    logging.info("Avvio del trading agent 1.\n")
     
     try:
-        # connessione al database
+        # Connessione al database
         cur, conn = connectDB.connect_nasdaq()
 
+        # Connessione al server MetaTrader 5 e login e salvataggio nel db per lo storico dei login.
         session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
 
         # Inserimento dei dati relativi al login nel database
         insertDataDB.insertInLoginDate(session_management.name, session_management.account, session_management.server, cur, conn)
 
-        # ottenimento delle azioni del Nasdaq accettate dal broker TickMill.
+        # Ottenimento delle azioni del Nasdaq accettate dal broker TickMill.
         symbols = symbolsAcceptedByTickmill.getSymbolsAcceptedByTickmill()
 
+        # Controllo se i simboli azionari sono presenti nel database
         for symbol in symbols:
             logging.info(f"Processing symbol: {symbol}")
 
+            # Si controlla se il simbolo azionario è presente nel MarketWatch e lo si aggiunge 
             info_order_send.checkSymbol(symbol)
 
             # Nelle query inserire apici '{symbol}' per far sì che vengano trattati come stringhe.
@@ -108,6 +109,7 @@ def main():
             cur.execute(f"SELECT time_value_it FROM nasdaq_actions WHERE symbol = '{symbol}' ORDER BY time_value_it DESC LIMIT 1")
             last_date = cur.fetchone()
 
+            # Se non ci sono dati nel database, scarica tutti i dati storici fino a 2 giorni fa
             if old_date is None and last_date is None:
 
                 logging.info("Scaricamento dati !\n")
@@ -120,7 +122,7 @@ def main():
 
             else:
 
-                # Scaricamento dei dati per le date mancanti
+                # Scaricamento dei dati di mercato per le date mancanti fino a 2 giorni fa
                 if last_date[0] < datetime.now()- timedelta(days=2):
                     logging.info("Scaricamento dati per le azioni con dati mancanti !\n")
 
@@ -132,9 +134,11 @@ def main():
                     logging.info(f"I dati per il simbolo azionario {symbol} sono già stati scaricati ed inseriti nel db!\n")
 
 
+        # Aggiornamento delle date per scaricaricare i dati di mercato del giorno precedente
         start_date =  datetime.now()- timedelta(days=1)
         end_date = datetime.now()
-        
+
+        # Ciclo while per scaricare i dati di mercato del giorno precedente
         while True:    
             # Ritorna un intero corrispondente al giorno della settimana ( 0: Monday, ... , 6: Sunday )
             dayOfWeek = datetime.today().weekday() 
@@ -150,7 +154,7 @@ def main():
                     # Calcola il tempo attuale
                     now = datetime.now()
                     
-                    # Calcola il tempo alla mezzanotte dei 2 giorni successivo
+                    # Definisci il tempo corrispondente ai 2 giorni successivi (lunedì)
                     next_day = now + timedelta(days=2)
                     
                     # Calcola la durata in secondi da adesso fino a lunedì
@@ -167,7 +171,7 @@ def main():
                     # Calcola il tempo attuale
                     now = datetime.now()
                     
-                    # Calcola il tempo alla mezzanotte del giorno successivo
+                    # Definisci il tempo corrispondente al giorno successivo (lunedì)
                     next_day = now + timedelta(days=1)
                     
                     # Calcola la durata in secondi da adesso fino a lunedì
@@ -177,7 +181,8 @@ def main():
                     # Metti in pausa il programma
                     time_module.sleep(seconds_next_day)
         
-            
+        
+            # Per ogni simbolo azionario del Nasdaq accettato dal broker TickMill si scaricano i dati del giorno precedente
             for symbol in symbols:
                 logging.info(f"Processing symbol: {symbol}")
 
@@ -200,6 +205,7 @@ def main():
             # è scaricato tutti i dati della giornata del 15 fino alle 22 itialiane (orario chiusura mercato) 
             # e il giorno successivo che è il 17, andrà a scaricare i dati di oggi 16.
 
+            # Aggiornamento delle date dopo la pausa per scaricaricare i dati di mercato del giorno precedente
             start_date = end_date
             end_date = datetime.now()
             

@@ -19,27 +19,27 @@ import time as time_module
 def main():
     # configurazione del logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-    # connessione al database
-    cur, conn = connectDB.connect_nasdaq()
     
     try:
-        # connessione al server MetaTrader 5 e login e salvataggio nel db per lo storico dei login.
+        # Connessione al database
+        cur, conn = connectDB.connect_nasdaq()
+
+        # Connessione al server MetaTrader 5 e login e salvataggio nel db per lo storico dei login.
         session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
         
         # Inserimento dei dati relativi al login nel database
         insertDataDB.insertInLoginDate(session_management.name, session_management.account, session_management.server, cur, conn)
 
-        # ottenimento del 5% delle azioni del Nasdaq ordinate per capitalizzazione decrescente.
+        # Ottenimento del 5% delle azioni del Nasdaq ordinate per capitalizzazione decrescente.
         pool_Actions_Nasdaq = symbolsAcceptedByTickmill.get5PercentSymbolsCapDesc()
 
         # Recupera lo stato dell'agente nel database:
         cur.execute("SELECT * FROM DataTrader ORDER BY date DESC LIMIT 1")
         last_state = cur.fetchone()
 
-
+        # Se last_state contiene un valore, viene destrutturato in variabili individuali.
         if last_state:
-            # Se last_state contiene un valore, viene destrutturato in variabili individuali.
+            
             (last_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti) = last_state
             logging.info(f"Ripresa stato dell'agent: {stateAgent}, Budget: {budget}, Profitto totale USD: {profitTotalUSD}, Profitto totale percentuale: {profitTotalPerc}, Perdita totale USD: {lossTotalUSD}, Perdita totale percentuale: {lossTotalPerc}, Budget Mantenimento: {budgetMantenimento}, Budget Investimenti: {budgetInvestimenti}\n")
 
@@ -59,9 +59,10 @@ def main():
 
             logging.info(f"StateAgent: {stateAgent}\n")
             
-                
+
+        # Se last_state è vuoto, allora l'agente si trova nello stato iniziale.
         else:
-            # Inizializza lo stato dell'agent se non ci sono dati precedenti
+            # Inizializza delle variabili se non ci sono dati precedenti
             budget = accountInfo.get_balance_account()
             equity = accountInfo.get_equity_account()
             margin = accountInfo.get_margin_account()
@@ -76,20 +77,19 @@ def main():
 
             stateAgent = agentState.AgentState.INITIAL
             
+            # Inserimento dei dati iniziali dell'agente nel database
             insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
             logging.info(f"Budget iniziale: {budget}\n")
             
             stateAgent = agentState.AgentState.SALE
 
+
         # Il ciclo principale esegue le operazioni di trading basandosi sull'orario di apertura della borsa Nasdaq (09:30 - 16:00 orario di New York), 
         # poiché durante l'orario di chiusura non possono essere effettuate operazioni di acquisto e vendita.
-
-        # Inizializzazione della variabile contentente gli identificatori degli ordini venduti. sales = []
         
         while True:
             # Ritorna un intero corrispondente al giorno della settimana ( 0: Monday, ... , 6: Sunday )
             dayOfWeek = datetime.today().weekday() 
-            
             
             # Se il giorno della settimana è sabato o domenica mettiamo in pausa il programma poiché il mercato è chiuso
             if dayOfWeek == 5 or dayOfWeek == 6:
@@ -102,11 +102,11 @@ def main():
                     # Calcola il tempo attuale
                     now = datetime.now()
                     
-                    # Calcola il tempo alla mezzanotte dei 2 giorni successivo
+                    # Definisci il tempo corrispondente alla mezzanotte dei 2 giorni successivi (lunedì)
                     next_day = now + timedelta(days=2)
                     next_midnight = datetime(year=next_day.year, month=next_day.month, day=next_day.day)
                     
-                    # Calcola la durata in secondi da adesso fino alla mezzanotte
+                    # Calcola la durata in secondi da adesso fino alla mezzanotte dei 2 giorni successivi.
                     seconds_until_midnight = (next_midnight - now).total_seconds()
                     logging.info(f"Waiting for {seconds_until_midnight} seconds until next midnight.\n")
                     
@@ -120,21 +120,26 @@ def main():
                     # Calcola il tempo attuale
                     now = datetime.now()
                     
-                    # Calcola il tempo alla mezzanotte del giorno successivo
+                    # Definisci il tempo corrispondente alla mezzanotte del giorno successivo (lunedì)
                     next_day = now + timedelta(days=1)
                     next_midnight = datetime(year=next_day.year, month=next_day.month, day=next_day.day)
                     
-                    # Calcola la durata in secondi da adesso fino alla mezzanotte
+                    # Calcola la durata in secondi da adesso fino alla mezzanotte del giorno successivo.
                     seconds_until_midnight = (next_midnight - now).total_seconds()
                     logging.info(f"Waiting for {seconds_until_midnight} seconds until next midnight.\n")
                     
                     # Metti in pausa il programma
                     time_module.sleep(seconds_until_midnight)
-        
 
-            # Ottenimento dell'orario corrente di New York
-            start_time_open_nas, end_time_open_nas, current_time, datetime_NY = getCurrentTimeNY()
+
+            # Orario di apertura della borsa Nasdaq a New York: 9:35 - 16:00. Ho notato che il mercato apre più tardi
+            start_time_open_nas = time(9, 35)
+            end_time_open_nas = time(16, 0)
+        
+            # Viene restituito l'oggetto relativo al fuso orario di New York e la data e l'orario attuale
+            tz_NY, current_time, datetime_NY = getCurrentTimeNY()
             
+            # Se l'orario corrente della zona di New York corrisponde all'orario di apertura della borsa del Nasdaq, allora:
             if start_time_open_nas <= current_time < end_time_open_nas:
 
                 logging.info(f"Orario New York: {datetime_NY.hour}:{datetime_NY.minute}, adatto per il trading.\n\n")     
@@ -202,16 +207,16 @@ def main():
                                         #ticket_sale = info_order_send.sell_Action(act)
                                         ticket_sale = info_order_send.close_Position(act, position=pos)
 
-
                                         # aggiorno il budget
                                         budgetInvestimenti = budgetInvestimenti + price_open
 
-                                        # per la strategia dell'investitore prudente soltanto il 10% del guadagno lo reinvesto
+                                        # Per la strategia dell'investitore prudente soltanto il 10% del guadagno lo reinvesto
                                         profit_10Perc = (profit*10)/100
                                         profit_90Perc = (profit*90)/100
                                         budgetInvestimenti = budgetInvestimenti + profit_10Perc
                                         budgetMantenimento = budgetMantenimento + profit_90Perc
 
+                                        # Inserimento dei dati relativi alla vendita del simbolo azionario nel database
                                         insertDataDB.insertInSale(datetime.now(), ticket_pur=ticket, ticket_sale=ticket_sale, volume=volume, symbol=act, priceSale=price_current, pricePurchase=price_open, profitUSD=profit, profitPerc=perc_profit, lossUSD=0, lossPerc=0 ,cur=cur, conn=conn)    
 
                                         # Aggiornamento del budget dopo la vendita con inclusi i profitti
@@ -219,18 +224,17 @@ def main():
                                         equity = accountInfo.get_equity_account()
                                         margin = accountInfo.get_margin_account()
 
+                                        # Aggiornamento del valore dei profitti totali .
                                         profitTotalUSD += profit
                                         profitTotalPerc =  perc_profit
 
+                                        # Aggiornamento dello stato dell'agent nel database
                                         insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
                                         logging.info(f"Venduta azione {act}, profitto: {profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n")
                                         
                                         logging.info("---------------------------------------------------------------------------------\n\n")
 
-                                        #sales.append(pos.ticket)
-
-                                        #logging.info(f"Vendite: {sales}\n")
 
 
                                 # Se il prezzo corrente è minore del prezzo iniziale di acquisto c'è una qualche perdita                                
@@ -260,18 +264,19 @@ def main():
                                         equity = accountInfo.get_equity_account()
                                         margin = accountInfo.get_margin_account()
 
+                                        # Aggiornamento del valore delle perdite totali.
                                         lossTotalUSD += loss
                                         lossTotalPerc =  perc_loss
 
+                                        # Aggiornamento dello stato dell'agent nel database
                                         insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
                                         logging.info(f"Venduta azione {act}, perdita: {loss}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n")
 
-                                        #sales.append(pos.ticket)
-
-                                        #logging.info(f"Vendite: {sales}\n")
+                                        logging.info("---------------------------------------------------------------------------------\n\n")
 
 
+                    # Una volta controllati tutti i simboli azionari si passa allo stato di compravendita.
                     logging.info(f"Cambio di stato da SALE a PURCHASE\n\n")
                     stateAgent = agentState.AgentState.PURCHASE
 
@@ -288,14 +293,12 @@ def main():
                     # Acquisto di azioni finché c'è budget
                     while budgetInvestimenti > 0:
 
-                        #stateAgent = agentState.AgentState.PURCHASE
-
-                        # scelgo un'azione random dal pool
+                        # Scelgo un'azione random dal pool
                         symbolRandom = random.randint(0, len(pool_Actions_Nasdaq)-1)
 
                         logging.info(f"Possiamo acquistare perché il budget dell'investimento è > 0: simbolo scelto randomicamente tra il pool delle azioni accettate dal broker TickMill è: {pool_Actions_Nasdaq[symbolRandom]}\n")
 
-                        # compro l'azione corrispondente
+                        # Compro l'azione corrispondente
                         result = info_order_send.buy_action(pool_Actions_Nasdaq[symbolRandom])
 
                         if result is not None:
@@ -303,17 +306,15 @@ def main():
                         else:
                             logging.error("Acquisto fallito.\n")
 
-                        # aggiorno il budget    
-                        #budgetInvestimenti = accountInfo.get_balance_account()
+                        # Si ottengono i dati relativi all'acquisto
                         price = result.price
                         volume = result.volume
                         ticket = result.order
 
-
-                        logging.info(f"Price: {price}")
-
+                        # Inserimento dei dati relativi all'acquisto nel database
                         insertDataDB.insertInPurchase(datetime.now(), ticket, volume, pool_Actions_Nasdaq[symbolRandom], price, cur, conn)
 
+                        # Aggiornamento del budget di investimento dopo l'acquisto dell'azione
                         budgetInvestimenti = budgetInvestimenti - price
 
                         # Aggiornamento del budget dopo l'acquisto dell'azione
@@ -321,15 +322,20 @@ def main():
                         equity = accountInfo.get_equity_account()
                         margin = accountInfo.get_margin_account()
 
+                        # Aggiornamento dello stato dell'agent nel database
                         insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+                        
                         logging.info(f"Acquistata azione {pool_Actions_Nasdaq[symbolRandom]}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}\n")
                         logging.info("---------------------------------------------------------------------------------\n\n")
 
                     logging.info(f"Cambio di stato da PURCHASE a WAIT\n\n")
+
+                    # Dopo lo stato di acquisto il programma entro nello stato di attesa
                     stateAgent = agentState.AgentState.WAIT
 
 
                 ######################## fine PURCHASE
+
 
 
                 ######################## inizio WAIT
@@ -338,15 +344,18 @@ def main():
                 if stateAgent == agentState.AgentState.WAIT :
                     logging.info(f"Agent entrato nello stato Wait\n")
 
+                    # Aggiornamento dello stato dell'agent nel database
                     insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
                     logging.info("Interruzione del programma per 15 minuti.\n")
-                            
+                    
+                    # Il programma si interrompe per 15 minuti
                     time_module.sleep(900)
 
                     logging.info(f"Cambio di stato da WAIT a SALE\n\n")
                     stateAgent = agentState.AgentState.SALE
                     
                 ######################## fine WAIT
+
 
 
             # Se l'orario corrente della zona di New York non corrisponde all'orario di apertura della borsa del Nasdaq, allora:
@@ -356,29 +365,26 @@ def main():
                 # Calcolo della pausa per l'apertura della Borsa del Nasdaq
 
                 try:
-                    specified_time = time(9, 35)  # Ad esempio, 9:35 , poiché ho notato che alcune volte il mercato apre più tardi
-
-                    # Get the timezone object for New York
-                    tz_NY = pytz.timezone('America/New_York') 
-
-                    # Get the current time in New York
+                    # Si ottiene la data (compreso l'orario) attuale del fuso orario di New York
                     datetime_NY = datetime.now(tz_NY)
 
-                    target_time = tz_NY.localize(datetime.combine(datetime_NY.date(), specified_time))
+                    # Si imposta l'orario target per l'apertura della borsa del Nasdaq tramite l'oggetto del fuso orario di New York, la data attuale di New York e l'orario di apertura del Nasdaq
+                    target_time = tz_NY.localize(datetime.combine(datetime_NY.date(), start_time_open_nas))
                     
-                    #print(target_time)
-                    #print()
-
                     # Se l'orario specificato è già passato per oggi, imposta l'orario per il giorno successivo
                     if target_time < datetime_NY:
                         target_time += timedelta(days=1)
 
+                    # L'agent viene impostato sullo stato WAIT
                     stateAgent = agentState.AgentState.WAIT
+
+                    # Aggiornamento dello stato dell'agent nel database
                     insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
                     # Il programma si interrompe fino all'apertura della borsa del Nasdaq
-                    wait(target_time)
+                    wait(datetime_NY, target_time)
 
+                    # Dopo l'attesa, l'agent viene impostato sullo stato SALE
                     stateAgent = agentState.AgentState.SALE
 
                 except Exception as e:
@@ -397,21 +403,18 @@ def main():
 
 
 
-def wait(target_time):
+def wait(datetime_NY, target_time):
     try:
-        # Get the timezone object for New York
-        tz_NY = pytz.timezone('America/New_York') 
-
-        # Get the current time in New York
-        datetime_NY = datetime.now(tz_NY)
-
+        # Calcola la durata in secondi tra l'orario attuale e l'orario target
         sleep_duration = (target_time - datetime_NY).total_seconds()
 
-        # print(sleep_duration)
-
+        # Se il tempo target è maggiore di 0, allora il programma si interrompe per il tempo specificato
         if sleep_duration > 0:
             logging.info(f"Il programma si interromperà fino a: {target_time}, con una pausa di {sleep_duration} secondi.")
+            
+            # Metti in pausa il programma per il tempo specificato
             time_module.sleep(sleep_duration)
+
             print("Il programma ha ripreso l'esecuzione.")
         else:
             print("Il tempo target è già passato.")
@@ -421,21 +424,16 @@ def wait(target_time):
 
 
 def getCurrentTimeNY():
-    # Get the timezone object for New York
+    # Creazione oggetto timezone per il fuso orario di New York
     tz_NY = pytz.timezone('America/New_York') 
 
-    # Get the current time in New York
+    # Viene restituita la data e l'orario attuale del fuso orario di New York
     datetime_NY = datetime.now(tz_NY)
 
-    #logging.info(f"Orario New York: {datetime_NY.hour}:{datetime_NY.minute}")
-
-    # Orario di apertura della borsa Nasdaq a New York: 9:35 - 16:00. Ho notato che il mercato apre più tardi
-    start_time_open_nas = time(9, 35)
-    end_time_open_nas = time(16, 0)
-
+    # Viene estratto solamente l'orario dell'oggetto datetime 
     current_time = datetime_NY.time()
 
-    return start_time_open_nas, end_time_open_nas, current_time, datetime_NY
+    return tz_NY, current_time, datetime_NY
 
 
 
