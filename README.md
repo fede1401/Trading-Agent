@@ -1,5 +1,5 @@
 # Trading-agent
-> [!Goal]
+> [!IMPORTANT]
 > Sviluppo di **trading agent** per lo sviluppo di **trading automatico**. (senza intervento umano diretto)
 
 Lo sviluppo di trading agent consiste nella **creazione di software autonomi in grado di eseguire operazioni di trading sui mercati finanziari senza intervento umano diretto**.
@@ -161,7 +161,7 @@ Ecco i seguenti passaggi:
 ****
 
 ### Sviluppo Agent1 e Agent2.
-> [!info]
+> [!IMPORTANT]
 > L'agent1 si occupa di:
 > - **Raccogliere i dati di mercato dei simboli azionari quotati sulla borsa Nasdaq accettati dal broker TickMill** e
 > - **Inserire questi dati all'interno del database postgreSQL**.
@@ -169,7 +169,7 @@ Ecco i seguenti passaggi:
 Lo scopo di questo è ==creare uno storico su cui basare l'analisi e l'apprendimento dell'agent3==.
 
 
-> [!info]
+> [!IMPORTANT]
 > L'Agent 2 svolge le seguenti operazioni:
 >
 > - **Acquista azioni** in modo casuale da un pool di simboli azionari accettati dal broker TickMill (5% per capitalizzazione decrescente).
