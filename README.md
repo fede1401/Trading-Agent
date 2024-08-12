@@ -75,13 +75,17 @@ For Debian: 
 3. Download Python 3.8 to your Downloads folder
 
 `cd ~/Downloads`
-`wget https://www.python.org/ftp/python/3.8.0/python-3.8.0-amd64.exe --no-check-certificate``
+`wget https://www.python.org/ftp/python/3.8.0/python-3.8.0-amd64.exe --no-check-certificate
 `
+
 4. Install Python 3.8 for the Windows environment in Wine. Assuming you are in the _~/Downloads_ folder
 
 `wine cmd`
 `python-3.8.0-amd64.exe``
 `
+
+5. A questo punto nuovamente digitare `python-3.8.0-amd64.exe`, dirigersi a Modify e aggiungere la spunta "Add Python to environment variables"
+
 
 ### Wine.
 Wine (originariamente un acronimo di "Wine Is Not an Emulator") è un livello di compatibilità  open source che consente di eseguire software/applicazioni **Windows** anche su sistemi operativi compatibili con POSIX, come Linux, macOS e BSD.
