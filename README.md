@@ -71,6 +71,7 @@ For Ubuntu:
 For Debian:   
 `wget https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/mt5debian.sh ; chmod +x mt5debian.sh ; ./mt5debian.sh`
 
+Se l'installazione non va a buon fine, digitare sul terminale `winecfg` e selezionare come versione di Windows 10.
 
 3. Download Python 3.8 to your Downloads folder
 
