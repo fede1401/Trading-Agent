@@ -1,6 +1,6 @@
 import csv
 import MetaTrader5 as mt5
-import session_management
+import session_management, insertDataDB, connectDB
 import pandas as pd
 import time
 
@@ -116,18 +116,73 @@ def get5PercentSymbolsCapDesc():
 
 
 
+def getSectorSymbols():
+    # Connessione al database
+    cur, conn = connectDB.connect_nasdaq()
+
+    # Connessione al server MetaTrader 5 e login e salvataggio nel db per lo storico dei login.
+    session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
+        
+    # Inserimento dei dati relativi al login nel database
+    insertDataDB.insertInLoginDate(session_management.name, session_management.account, session_management.server, cur, conn)
+
+    # Ottieni i simboli accettati dal broker Tickmill
+    symbolsAccepted = getSymbolsAcceptedByTickmill()
+
+    # Dizionario per memorizzare i simboli e il settore di appartenenza
+    diz = dict()
+
+    # Leggi il file CSV in un DataFrame
+    df = pd.read_csv('csv_files/nasdaq_symbols.csv')
+
+    # Apri il file CSV in modalità lettura
+    with open('csv_files/nasdaq_symbols.csv', mode='r') as file:
+        # Crea un lettore CSV con DictReader
+        csv_reader = csv.DictReader(file)
+
+        # Aggiungi i simboli accettati e il settore di appartenenza al dizionario
+        for col in csv_reader:
+            if col['Symbol'] in symbolsAccepted:
+                diz[col['Symbol']] = col['Sector']
+
+    # Ottieni le chiavi del dizionario (i simboli)
+    key_diz = list(diz.keys())
+
+    print(diz.keys())
+
+    settoriDupl = diz.values()
+    settori = []
+    for sett in settoriDupl:
+        if sett not in settori:
+            settori.append(sett)
+            insertDataDB.insertInSector(str(sett), cur, conn)
+
+    
+    print(settori)
+
+    print(len(key_diz))
+
+    # Ritorna il dizionario con i simboli e il settore di appartenenza
+    return diz
+
+
+
+
 # Codice eseguibile solo se il file è eseguito come script principale
 if __name__ == '__main__':
     # Effettua il login su MetaTrader5 usando le credenziali dal modulo session_management
-    session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
+    #session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
 
     # Ottieni i simboli dal file CSV
-    symbols = symbolsNasdaqCSV()
-    print(symbols)
+    #symbols = symbolsNasdaqCSV()
+    #print(symbols)
     
     # Ottieni i simboli accettati dal broker Tickmill
-    symbolsAccepted = getSymbolsAcceptedByTickmill()
-    print(len(symbolsAccepted))
+    #symbolsAccepted = getSymbolsAcceptedByTickmill()
+    #print(len(symbolsAccepted))
 
     # Ottieni i simboli ordinati per capitalizzazione di mercato
     # getSymbolsCapDesc()
+
+    sector = getSectorSymbols()
+    print(sector)

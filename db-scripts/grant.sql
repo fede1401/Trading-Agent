@@ -12,6 +12,7 @@ ALTER TABLE Purchase OWNER TO :username;
 ALTER TABLE Sale OWNER TO :username;
 ALTER TABLE DataTrader OWNER TO :username;
 ALTER TABLE loginDate OWNER TO :username;
+ALTER TABLE Sector OWNER TO :username;
 
 
 GRANT ALL ON SCHEMA public TO :username ;

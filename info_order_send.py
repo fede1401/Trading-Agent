@@ -2,6 +2,7 @@ import MetaTrader5 as mt5
 from datetime import datetime
 import session_management
 import logging
+import math
 
 # Ottiene il prezzo di mercato corrente per un simbolo specificato.
 def getCurrentMarketPrice(symbol):
@@ -59,6 +60,60 @@ def buy_action(symbol):
     min_volume = symbol_info.volume_min
     volume_step = symbol_info.volume_step
     volume = min_volume
+
+    print(f"min_volume: {min_volume}, volume_step:{volume_step}, vol: {volume}\n")
+
+    # Creazione dell'ordine
+    request = {
+        "action": mt5.TRADE_ACTION_DEAL,
+        "symbol": symbol,
+        "volume": volume,
+        "type": mt5.ORDER_TYPE_BUY,
+        "price": price,
+        "deviation": 10,
+        "magic": 234000,
+        "comment": "python script open",
+        "type_time": mt5.ORDER_TIME_GTC,
+        "type_filling": mt5.ORDER_FILLING_IOC,
+    }
+
+    # Invia la richiesta di trading
+    result = mt5.order_send(request)
+
+    logging.info(f"Result: {result}")
+
+    # Controlla il risultato dell'esecuzione dell'ordine    
+    checkEsecutionOrder(symbol_info=symbol_info, price=price, result=result, request=request)
+    return result
+
+
+# Esegue un acquisto di un certo numero di azioni di un titolo azionario.
+def buy_actions_of_title(symbol):
+    # Ottiene i dati di uno specifico simbolo azionario
+    symbol_info = checkSymbol(symbol)
+
+    # Ottiene la valuta dell'account
+    account_currency=mt5.account_info().currency
+    print("Account currency:",account_currency)
+
+    # Ottiene il prezzo attuale di acquisto del simbolo
+    tick_info = mt5.symbol_info_tick(symbol)
+
+    # Se non è possibile ottenere le informazioni di tick, esci dal programma
+    if tick_info is None:
+        logging.error(f"Errore nel recupero delle informazioni di tick per {symbol}.")
+        return None
+    
+    price = tick_info.ask
+
+    # Calcola il volume minimo e il passo di volume
+    min_volume = symbol_info.volume_min
+    volume_step = symbol_info.volume_step
+    
+    volume = float(math.floor(1000 / price))
+    logging.info(f"\n volume:{volume}\n")
+    #if volume > volume_step:
+    #    volume = volume_step
 
     print(f"min_volume: {min_volume}, volume_step:{volume_step}, vol: {volume}\n")
 

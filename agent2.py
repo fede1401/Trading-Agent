@@ -40,8 +40,8 @@ def main():
         # Se last_state contiene un valore, viene destrutturato in variabili individuali.
         if last_state:
             
-            (last_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti) = last_state
-            logging.info(f"Ripresa stato dell'agent: {stateAgent}, Budget: {budget}, Profitto totale USD: {profitTotalUSD}, Profitto totale percentuale: {profitTotalPerc}, Perdita totale USD: {lossTotalUSD}, Perdita totale percentuale: {lossTotalPerc}, Budget Mantenimento: {budgetMantenimento}, Budget Investimenti: {budgetInvestimenti}\n")
+            (last_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti) = last_state
+            logging.info(f"Ripresa stato dell'agent: {stateAgent}, Budget: {budget}, Profitto totale USD: {profitTotalUSD}, Profitto totale percentuale: {profitTotalPerc}, Budget Mantenimento: {budgetMantenimento}, Budget Investimenti: {budgetInvestimenti}\n")
 
             if stateAgent == 'WAIT':
                 stateAgent = agentState.AgentState.WAIT
@@ -72,13 +72,11 @@ def main():
             budgetMantenimento = 0
             profitTotalUSD = 0
             profitTotalPerc = 0
-            lossTotalUSD = 0
-            lossTotalPerc = 0
 
             stateAgent = agentState.AgentState.INITIAL
             
             # Inserimento dei dati iniziali dell'agente nel database
-            insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+            insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
             logging.info(f"Budget iniziale: {budget}\n")
             
             stateAgent = agentState.AgentState.SALE
@@ -229,7 +227,7 @@ def main():
                                         profitTotalPerc =  perc_profit
 
                                         # Aggiornamento dello stato dell'agent nel database
-                                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+                                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
                                         logging.info(f"Venduta azione {act}, profitto: {profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n")
                                         
@@ -259,7 +257,7 @@ def main():
                         logging.info(f"Possiamo acquistare perché il budget dell'investimento è > 0: simbolo scelto randomicamente tra il pool delle azioni accettate dal broker TickMill è: {pool_Actions_Nasdaq[symbolRandom]}\n")
 
                         # Compro l'azione corrispondente
-                        result = info_order_send.buy_action(pool_Actions_Nasdaq[symbolRandom])
+                        result = info_order_send.buy_actions_of_title(pool_Actions_Nasdaq[symbolRandom])
 
                         if result is not None:
                             logging.info(f"Acquisto completato: {result}\n")
@@ -275,7 +273,7 @@ def main():
                         insertDataDB.insertInPurchase(datetime.now(), ticket, volume, pool_Actions_Nasdaq[symbolRandom], price, cur, conn)
 
                         # Aggiornamento del budget di investimento dopo l'acquisto dell'azione
-                        budgetInvestimenti = budgetInvestimenti - price
+                        budgetInvestimenti = budgetInvestimenti - (price * volume)
 
                         # Aggiornamento del budget dopo l'acquisto dell'azione
                         budget = accountInfo.get_balance_account() 
@@ -283,7 +281,7 @@ def main():
                         margin = accountInfo.get_margin_account()
 
                         # Aggiornamento dello stato dell'agent nel database
-                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
                         
                         logging.info(f"Acquistata azione {pool_Actions_Nasdaq[symbolRandom]}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}\n")
                         logging.info("---------------------------------------------------------------------------------\n\n")
@@ -305,7 +303,7 @@ def main():
                     logging.info(f"Agent entrato nello stato Wait\n")
 
                     # Aggiornamento dello stato dell'agent nel database
-                    insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+                    insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
                     logging.info("Interruzione del programma per 15 minuti.\n")
                     
                     # Il programma si interrompe per 15 minuti
@@ -339,7 +337,7 @@ def main():
                     stateAgent = agentState.AgentState.WAIT
 
                     # Aggiornamento dello stato dell'agent nel database
-                    insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+                    insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
                     # Il programma si interrompe fino all'apertura della borsa del Nasdaq
                     wait(datetime_NY, target_time)

@@ -70,3 +70,9 @@ CREATE TABLE IF NOT EXISTS  DataTrader (
     credit  DOUBLE PRECISION NOT NULL,     -- per il valore dei soldi da investire (freee Margin in mt5.)
     PRIMARY KEY(date) 
 );
+
+
+CREATE TABLE IF NOT EXISTS Sector (
+    nome VARCHAR (50) NOT NULL,
+    PRIMARY KEY(nome)
+);

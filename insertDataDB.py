@@ -193,3 +193,25 @@ def insertInLoginDate(nameSurname, username, server, cur, conn):
         print("Dati relativi al login dell'utente salvati nel db.\n")
         
 
+
+def insertInSector(nome, cur, conn):
+    if cur is not None and conn is not None:
+        print("\nConnessione al database nasdaq avvenuta con successo.\n")
+        
+        try:
+            # Esegue l'inserimento nella tabella loginDate
+            cur.execute(
+                "INSERT INTO Sector (nome) "
+                "VALUES (%s) "
+                "ON CONFLICT (nome) DO NOTHING",
+                (
+                    nome,
+                )
+            )
+        except Exception as e:
+            print("Errore durante l'inserimento dei dati: ", e)
+        
+        # Conferma la transazione e stampa un messaggio
+        conn.commit()
+            
+        print("Dati relativi al  salvati nel db.\n")

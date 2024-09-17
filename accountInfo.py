@@ -55,6 +55,7 @@ def get_margin_account():
 
 
 if __name__ == '__main__':
+    session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
     #get_account_info()
     #get_balance_account()
     get_account_info()
