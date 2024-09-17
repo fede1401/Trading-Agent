@@ -49,8 +49,6 @@ CREATE TABLE IF NOT EXISTS  Sale (
     pricePurchase  DOUBLE PRECISION NOT NULL,
     profit_USD DOUBLE PRECISION NOT NULL,
     profit_Perc  DOUBLE PRECISION NOT NULL,
-    loss_USD DOUBLE PRECISION NOT NULL,
-    loss_Perc  DOUBLE PRECISION NOT NULL,
     PRIMARY KEY(date, symbol)
 );
 
@@ -68,8 +66,6 @@ CREATE TABLE IF NOT EXISTS  DataTrader (
     margin DOUBLE PRECISION NOT NULL,      -- denaro "bloccato" nel conto come garanzia per l'apertura di una posizione 
     profitUSD DOUBLE PRECISION NOT NULL,
     profitPerc DOUBLE PRECISION NOT NULL,
-    lossUSD DOUBLE PRECISION NOT NULL,
-    lossPerc DOUBLE PRECISION NOT NULL,
     deposit DOUBLE PRECISION NOT NULL,     -- per il valore dei guadagni di mantenimento
     credit  DOUBLE PRECISION NOT NULL,     -- per il valore dei soldi da investire (freee Margin in mt5.)
     PRIMARY KEY(date) 

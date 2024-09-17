@@ -236,46 +236,6 @@ def main():
                                         logging.info("---------------------------------------------------------------------------------\n\n")
 
 
-
-                                # Se il prezzo corrente è minore del prezzo iniziale di acquisto c'è una qualche perdita                                
-                                if price_current < price_open:
-                                    
-                                    logging.info(f"Price current: {price_current} minore del prezzo di apertura: {price_open}\n")
-
-                                    # Calcolo della perdita
-                                    loss = price_open - price_current
-                                    perc_loss = loss / price_open
-
-                                    # Rivendita con il 2% di perdita
-                                    if perc_loss >= 0.02:
-
-                                        logging.info(f"Si può vendere {act} poiché c'è una perdita del {perc_loss}\n")
-
-                                        #ticket_sale = info_order_send.sell_Action(act)
-                                        ticket_sale = info_order_send.close_Position(act, position=pos)
-
-                                        # aggiorno il budget
-                                        budgetInvestimenti = budgetInvestimenti + price_current
-
-                                        insertDataDB.insertInSale(datetime.now(), ticket_pur=ticket, ticket_sale=ticket_sale, volume=volume, symbol=act, priceSale=price_current, pricePurchase=price_open, profitUSD=0, profitPerc=0, lossUSD=loss, lossPerc=perc_loss, cur=cur, conn=conn)    
-
-                                        # Aggiornamento del budget dopo la vendita con inclusi i profitti
-                                        budget = accountInfo.get_balance_account() 
-                                        equity = accountInfo.get_equity_account()
-                                        margin = accountInfo.get_margin_account()
-
-                                        # Aggiornamento del valore delle perdite totali.
-                                        lossTotalUSD += loss
-                                        lossTotalPerc =  perc_loss
-
-                                        # Aggiornamento dello stato dell'agent nel database
-                                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, lossTotalUSD, lossTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-
-                                        logging.info(f"Venduta azione {act}, perdita: {loss}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n")
-
-                                        logging.info("---------------------------------------------------------------------------------\n\n")
-
-
                     # Una volta controllati tutti i simboli azionari si passa allo stato di compravendita.
                     logging.info(f"Cambio di stato da SALE a PURCHASE\n\n")
                     stateAgent = agentState.AgentState.PURCHASE

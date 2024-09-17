@@ -5,8 +5,8 @@ import insertDataDB
 
 ############ variabili locali programma ###################
 path = 'C:\\Program Files\\MetaTrader 5\\terminal64.exe'
-account = 25127744
-password = '3==joXAQM([$'
+account = 25142282
+password = 'xJ5P=vC,(S|!'
 server = 'TickmillEU-Demo'
 name = 'Federico Ferdinandi'
 #############################################

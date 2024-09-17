@@ -101,15 +101,15 @@ def insertInPurchase (date, ticket, volume, symbol, price, cur, conn):
 
 
 # Funzione per inserire una vendita (chiusura di una posizione) di un simbolo azionario nel database
-def insertInSale (date, ticket_pur, ticket_sale, volume, symbol, priceSale, pricePurchase, profitUSD, profitPerc, lossUSD, lossPerc, cur, conn):
+def insertInSale (date, ticket_pur, ticket_sale, volume, symbol, priceSale, pricePurchase, profitUSD, profitPerc, cur, conn):
     if cur is not None and conn is not None:
         print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella Sale
             cur.execute(
-                "INSERT INTO Sale (date, ticket_pur, ticket_sale, volume, symbol, priceSale, pricePurchase, profit_USD, profit_Perc, loss_USD, loss_Perc)"
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "INSERT INTO Sale (date, ticket_pur, ticket_sale, volume, symbol, priceSale, pricePurchase, profit_USD, profit_Perc)"
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
                 "ON CONFLICT (date, symbol) DO NOTHING",
                 (
                     date,
@@ -120,9 +120,7 @@ def insertInSale (date, ticket_pur, ticket_sale, volume, symbol, priceSale, pric
                     convert_numpy_to_python(priceSale),
                     convert_numpy_to_python(pricePurchase),
                     convert_numpy_to_python(profitUSD),
-                    convert_numpy_to_python(profitPerc),
-                    convert_numpy_to_python(lossUSD),
-                    convert_numpy_to_python(lossPerc)
+                    convert_numpy_to_python(profitPerc)
                 )
             )
         except Exception as e:
@@ -135,15 +133,15 @@ def insertInSale (date, ticket_pur, ticket_sale, volume, symbol, priceSale, pric
         
 
 # Funzione per inserire dati relativi allo stato del trader nel database
-def insertInDataTrader(date, stateAg, initialBalance, balance, equity, margin, profitUSD, profitPerc, lossUSD, lossPerc, deposit, credit, cur, conn):
+def insertInDataTrader(date, stateAg, initialBalance, balance, equity, margin, profitUSD, profitPerc, deposit, credit, cur, conn):
     if cur is not None and conn is not None:
         print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella DataTrader
             cur.execute(
-                "INSERT INTO DataTrader (date, stAgent, initialBalance, balance, equity, margin, profitUSD, profitPerc, lossUSD, lossPerc, deposit, credit) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "INSERT INTO DataTrader (date, stAgent, initialBalance, balance, equity, margin, profitUSD, profitPerc, deposit, credit) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
                 "ON CONFLICT (date) DO NOTHING",
                 (
                     date,
@@ -154,8 +152,6 @@ def insertInDataTrader(date, stateAg, initialBalance, balance, equity, margin, p
                     convert_numpy_to_python(margin),
                     convert_numpy_to_python(profitUSD),
                     convert_numpy_to_python(profitPerc),
-                    convert_numpy_to_python(lossUSD),
-                    convert_numpy_to_python(lossPerc),
                     convert_numpy_to_python(deposit),
                     convert_numpy_to_python(credit)
                 )
