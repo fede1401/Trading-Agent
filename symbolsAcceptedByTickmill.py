@@ -154,8 +154,9 @@ def getSectorSymbols():
     settori = []
     for sett in settoriDupl:
         if sett not in settori:
-            settori.append(sett)
-            insertDataDB.insertInSector(str(sett), cur, conn)
+            if sett != '':
+                settori.append(sett)
+                insertDataDB.insertInSector(str(sett), cur, conn)
 
     
     print(settori)

@@ -1,5 +1,5 @@
 
-
+"""
 b = 1
 a = 9
 c = 2
@@ -20,6 +20,33 @@ while True:
 
         if (c== 4):
             print("ciao2")
+"""
+import MetaTrader5 as mt5
+from datetime import datetime
+import session_management, info_order_send,symbolsAcceptedByTickmill, connectDB, accountInfo, insertDataDB, agentState
+import psycopg2
+import time
+import random
+import logging
+import pytz
+from datetime import datetime, time, timedelta
+import time as time_module
+import csv
+import agent2
+
+
+
+# Connessione al server MetaTrader 5 e login e salvataggio nel db per lo storico dei login.        
+session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
+        
+# Ottenimento operazioni di trading attualmente in corso tramite simbolo azionario
+positions = mt5.positions_get(symbol='AMZN')
+print(positions)
+if positions is not None:
+
+# Per ogni posizione di quell'azione:
+    for pos in positions:
+        logging.info(f"{pos}\n")
 
 
 # import MetaTrader5 as mt5

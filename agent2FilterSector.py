@@ -13,10 +13,11 @@ import logging
 import pytz
 from datetime import datetime, time, timedelta
 import time as time_module
+import csv
+import agent2
 
 
-
-def main():
+def main(sectors):
     # configurazione del logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     
@@ -135,7 +136,7 @@ def main():
             end_time_open_nas = time(16, 0)
         
             # Viene restituito l'oggetto relativo al fuso orario di New York e la data e l'orario attuale
-            tz_NY, current_time, datetime_NY = getCurrentTimeNY()
+            tz_NY, current_time, datetime_NY = agent2.getCurrentTimeNY()
             
             # Se l'orario corrente della zona di New York corrisponde all'orario di apertura della borsa del Nasdaq, allora:
             if start_time_open_nas <= current_time < end_time_open_nas:
@@ -256,6 +257,25 @@ def main():
 
                         logging.info(f"Possiamo acquistare perché il budget dell'investimento è > 0: simbolo scelto randomicamente tra il pool delle azioni accettate dal broker TickMill è: {pool_Actions_Nasdaq[symbolRandom]}\n")
 
+                        sectFind = False
+                        while sectFind==False:
+                            # Apri il file CSV in modalità lettura
+                            with open('csv_files/nasdaq_symbols.csv', mode='r') as file:
+                                # Crea un lettore CSV con DictReader
+                                csv_reader = csv.DictReader(file)
+
+                                for col in csv_reader:
+                                    if col['Symbol'] == pool_Actions_Nasdaq[symbolRandom]:
+                                        logging.info(f"Settore di appartenenza dell'azione scelta: {col['Sector']}\n")
+                                        
+                                        if col['Sector'] in sectors:
+                                            logging.info(f"Settore di appartenenza dell'azione scelta è tra quelli scelti dall'utente.\n")
+                                            sectFind = True
+                                            break
+                                        else:
+                                            logging.info(f"Settore di appartenenza dell'azione scelta non è tra quelli scelti dall'utente, si passa alla prossima azione.\n")
+                                            
+
                         # Compro l'azione corrispondente
                         result = info_order_send.buy_actions_of_title(pool_Actions_Nasdaq[symbolRandom])
 
@@ -340,7 +360,7 @@ def main():
                     insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
                     # Il programma si interrompe fino all'apertura della borsa del Nasdaq
-                    wait(datetime_NY, target_time)
+                    agent2.wait(datetime_NY, target_time)
 
                     # Dopo l'attesa, l'agent viene impostato sullo stato SALE
                     stateAgent = agentState.AgentState.SALE
@@ -361,40 +381,31 @@ def main():
 
 
 
-def wait(datetime_NY, target_time):
-    try:
-        # Calcola la durata in secondi tra l'orario attuale e l'orario target
-        sleep_duration = (target_time - datetime_NY).total_seconds()
-
-        # Se il tempo target è maggiore di 0, allora il programma si interrompe per il tempo specificato
-        if sleep_duration > 0:
-            logging.info(f"Il programma si interromperà fino a: {target_time}, con una pausa di {sleep_duration} secondi.")
-            
-            # Metti in pausa il programma per il tempo specificato
-            time_module.sleep(sleep_duration)
-
-            print("Il programma ha ripreso l'esecuzione.")
-        else:
-            print("Il tempo target è già passato.")
-    except Exception as e:
-        print(f"Errore durante l'attesa: {e}")
-
-
-
-def getCurrentTimeNY():
-    # Creazione oggetto timezone per il fuso orario di New York
-    tz_NY = pytz.timezone('America/New_York') 
-
-    # Viene restituita la data e l'orario attuale del fuso orario di New York
-    datetime_NY = datetime.now(tz_NY)
-
-    # Viene estratto solamente l'orario dell'oggetto datetime 
-    current_time = datetime_NY.time()
-
-    return tz_NY, current_time, datetime_NY
-
 
 
 if __name__ == '__main__':
-    main()
+    # Connessione al database
+    cur, conn = connectDB.connect_nasdaq()
+    
+    # Recupera i settori nel database:
+    cur.execute("SELECT * FROM sector;")
+    sectors = [sec[0] for sec in cur.fetchall()]  # Estrai solo il primo elemento di ogni tupla
+    print(sectors)
+
+    i = 1
+    for sec in sectors:
+        print(f"{i}: {sec}\n")
+        i += 1
+
+    print(f"Scegli uno o più settori su cui applicare l'agente (indicando i numeri con virgole se più di uno):\n")
+    choises = input("Scrivi i numeri: ")
+
+    choises = choises.split(',')
+    choises = [int(x) for x in choises]
+    print(choises)
+
+    sectors = [sectors[i-1] for i in choises]
+    print(sectors)
+
+    main(sectors)
 
