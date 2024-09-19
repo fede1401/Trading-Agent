@@ -87,66 +87,7 @@ def main(sectors):
         # poiché durante l'orario di chiusura non possono essere effettuate operazioni di acquisto e vendita.
         
         while True:
-            # Ritorna un intero corrispondente al giorno della settimana ( 0: Monday, ... , 6: Sunday )
-            dayOfWeek = datetime.today().weekday() 
             
-            # Se il giorno della settimana è sabato o domenica mettiamo in pausa il programma poiché il mercato è chiuso
-            if dayOfWeek == 5 or dayOfWeek == 6:
-                logging.info(f"Pausa del trading agent poiché è sabato o domenica. {dayOfWeek}\n")
-                
-                # Il programma si interrompe fino a lunedì
-                if dayOfWeek == 5:
-                    logging.info("Oggi è sabato, il programma si interrompe fino a lunedi.\n")
-                    
-                    # Calcola il tempo attuale
-                    now = datetime.now()
-                    
-                    # Definisci il tempo corrispondente alla mezzanotte dei 2 giorni successivi (lunedì)
-                    next_day = now + timedelta(days=2)
-                    next_midnight = datetime(year=next_day.year, month=next_day.month, day=next_day.day)
-                    
-                    # Calcola la durata in secondi da adesso fino alla mezzanotte dei 2 giorni successivi.
-                    seconds_until_midnight = (next_midnight - now).total_seconds()
-                    logging.info(f"Waiting for {seconds_until_midnight} seconds until next midnight.\n")
-                    
-                    # Metti in pausa il programma
-                    time_module.sleep(seconds_until_midnight)
-
-
-                if dayOfWeek == 6:
-                    logging.info("Oggi è domenica, il programma si interrompe fino a lunedi.\n")
-
-                    # Calcola il tempo attuale
-                    now = datetime.now()
-                    
-                    # Definisci il tempo corrispondente alla mezzanotte del giorno successivo (lunedì)
-                    next_day = now + timedelta(days=1)
-                    next_midnight = datetime(year=next_day.year, month=next_day.month, day=next_day.day)
-                    
-                    # Calcola la durata in secondi da adesso fino alla mezzanotte del giorno successivo.
-                    seconds_until_midnight = (next_midnight - now).total_seconds()
-                    logging.info(f"Waiting for {seconds_until_midnight} seconds until next midnight.\n")
-                    
-                    # Metti in pausa il programma
-                    time_module.sleep(seconds_until_midnight)
-
-
-            # Orario di apertura della borsa Nasdaq a New York: 9:35 - 16:00. Ho notato che il mercato apre più tardi
-            start_time_open_nas = time(9, 35)
-            end_time_open_nas = time(16, 0)
-        
-            # Viene restituito l'oggetto relativo al fuso orario di New York e la data e l'orario attuale
-            tz_NY, current_time, datetime_NY = agent2.getCurrentTimeNY()
-            
-            # Se l'orario corrente della zona di New York corrisponde all'orario di apertura della borsa del Nasdaq, allora:
-            if start_time_open_nas <= current_time < end_time_open_nas:
-
-                logging.info(f"Orario New York: {datetime_NY.hour}:{datetime_NY.minute}, adatto per il trading.\n\n")     
-                time_module.sleep(1)
-
-
-                ######################## inizio SALE
-
                 if stateAgent == agentState.AgentState.SALE :
                     logging.info(f"Agent entrato nello stato Sale\n")
 
@@ -336,38 +277,7 @@ def main(sectors):
 
 
 
-            # Se l'orario corrente della zona di New York non corrisponde all'orario di apertura della borsa del Nasdaq, allora:
-            else:
-                logging.info("Orario non adatto per il trading.\n")
-                
-                # Calcolo della pausa per l'apertura della Borsa del Nasdaq
-
-                try:
-                    # Si ottiene la data (compreso l'orario) attuale del fuso orario di New York
-                    datetime_NY = datetime.now(tz_NY)
-
-                    # Si imposta l'orario target per l'apertura della borsa del Nasdaq tramite l'oggetto del fuso orario di New York, la data attuale di New York e l'orario di apertura del Nasdaq
-                    target_time = tz_NY.localize(datetime.combine(datetime_NY.date(), start_time_open_nas))
-                    
-                    # Se l'orario specificato è già passato per oggi, imposta l'orario per il giorno successivo
-                    if target_time < datetime_NY:
-                        target_time += timedelta(days=1)
-
-                    # L'agent viene impostato sullo stato WAIT
-                    stateAgent = agentState.AgentState.WAIT
-
-                    # Aggiornamento dello stato dell'agent nel database
-                    insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-
-                    # Il programma si interrompe fino all'apertura della borsa del Nasdaq
-                    agent2.wait(datetime_NY, target_time)
-
-                    # Dopo l'attesa, l'agent viene impostato sullo stato SALE
-                    stateAgent = agentState.AgentState.SALE
-
-                except Exception as e:
-                    print(f"Errore durante l'impostazione dell'orario target: {e}")
-
+            
 
         # fine while True:
 
