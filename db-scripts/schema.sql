@@ -67,8 +67,7 @@ CREATE TABLE IF NOT EXISTS  DataTrader (
     profitUSD DOUBLE PRECISION NOT NULL,
     profitPerc DOUBLE PRECISION NOT NULL,
     deposit DOUBLE PRECISION NOT NULL,     -- per il valore dei guadagni di mantenimento
-    credit  DOUBLE PRECISION NOT NULL,     -- per il valore dei soldi da investire (freee Margin in mt5.)
-    PRIMARY KEY(date) 
+    credit  DOUBLE PRECISION NOT NULL     -- per il valore dei soldi da investire (freee Margin in mt5.)
 );
 
 

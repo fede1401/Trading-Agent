@@ -106,11 +106,11 @@ def getSymbolsCapDesc():
 def get5PercentSymbolsCapDesc():
     # Ottieni i simboli ordinati per capitalizzazione di mercato
     symbol_cap_desc = getSymbolsCapDesc()
-
+    
     # Calcola il 5% del numero totale di simboli
-    n = len(symbol_cap_desc)
-    n_5 = int(n * 0.05)
-
+    nTot = len(symbolsNasdaqCSV())
+    n_5 = int(nTot * 0.05)
+    
     # Ritorna il 5% dei simboli con la capitalizzazione di mercato più alta
     return symbol_cap_desc[0:n_5]
 

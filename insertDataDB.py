@@ -1,8 +1,7 @@
-import MetaTrader5 as mt5
 from datetime import datetime, timedelta
 import psycopg2 
 import numpy as np
-import session_management, connectDB
+import connectDB
 import logging
 
 
@@ -141,8 +140,7 @@ def insertInDataTrader(date, stateAg, initialBalance, balance, equity, margin, p
             # Esegue l'inserimento nella tabella DataTrader
             cur.execute(
                 "INSERT INTO DataTrader (date, stAgent, initialBalance, balance, equity, margin, profitUSD, profitPerc, deposit, credit) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-                "ON CONFLICT (date) DO NOTHING",
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ",
                 (
                     date,
                     stateAg.name, 

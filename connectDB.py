@@ -1,4 +1,3 @@
-import MetaTrader5 as mt5
 from datetime import datetime
 import psycopg2 # https://www.youtube.com/watch?v=miEFm1CyjfM
 
@@ -63,3 +62,8 @@ def connectDB_example ():
 
     # Ritorna il cursore e l'oggetto di connessione al database
     return cur, conn
+
+
+
+if __name__ == "__main__":
+    connectDB_example()
