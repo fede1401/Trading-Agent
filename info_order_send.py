@@ -105,6 +105,9 @@ def buy_actions_of_title(symbol):
         return None
     
     price = tick_info.ask
+    
+    if price > 1000:
+        return None
 
     # Calcola il volume minimo e il passo di volume
     min_volume = symbol_info.volume_min

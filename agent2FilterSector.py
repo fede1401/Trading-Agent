@@ -183,80 +183,73 @@ def main(sectors):
                 ######################## fine SALE
 
 
-
-
                 ######################## inizio PURCHASE
-
                 if stateAgent == agentState.AgentState.PURCHASE :
                     logging.info(f"Agent entrato nello stato Purchase\n")
-
+                    
+                    # Carica il file CSV una volta e memorizza i simboli e settori in un dizionario
+                    symbol_sector_map = {}
+                    with open('csv_files/nasdaq_symbols.csv', mode='r') as file:
+                        csv_reader = csv.DictReader(file)
+                        for row in csv_reader:
+                            symbol_sector_map[row['Symbol']] = row['Sector']
+                            
                     # Acquisto di azioni finché c'è budget
                     while budgetInvestimenti > 0:
 
                         # Scelgo un'azione random dal pool
-                        symbolRandom = random.randint(0, len(pool_Actions_Nasdaq)-1)
+                        symbolRandom = random.randint(0, len(pool_Actions_Nasdaq) - 1)
+                        chosen_symbol = pool_Actions_Nasdaq[symbolRandom]
+                        logging.info(f"Possiamo acquistare perché il budget dell'investimento è > 0: simbolo scelto randomicamente è: {chosen_symbol}\n")
 
-                        logging.info(f"Possiamo acquistare perché il budget dell'investimento è > 0: simbolo scelto randomicamente tra il pool delle azioni accettate dal broker TickMill è: {pool_Actions_Nasdaq[symbolRandom]}\n")
+                        # Controllo il settore dell'azione scelta
+                        sector = symbol_sector_map.get(chosen_symbol)
+                        if sector and sector in sectors:
+                            logging.info(f"Settore di appartenenza dell'azione scelta ({sector}) è tra quelli scelti dall'utente.\n")
+                            
+                            # Compro l'azione corrispondente
+                            result = info_order_send.buy_actions_of_title(chosen_symbol)
+                            if result is not None:
+                                logging.info(f"Acquisto completato: {result}\n")
+                            else:
+                                logging.error("Acquisto fallito.\n")
+                                continue  # Se l'acquisto fallisce, passa al prossimo simbolo
 
-                        sectFind = False
-                        while sectFind==False:
-                            # Apri il file CSV in modalità lettura
-                            with open('csv_files/nasdaq_symbols.csv', mode='r') as file:
-                                # Crea un lettore CSV con DictReader
-                                csv_reader = csv.DictReader(file)
+                            # Si ottengono i dati relativi all'acquisto
+                            price = result.price
+                            volume = result.volume
+                            ticket = result.order
 
-                                for col in csv_reader:
-                                    if col['Symbol'] == pool_Actions_Nasdaq[symbolRandom]:
-                                        logging.info(f"Settore di appartenenza dell'azione scelta: {col['Sector']}\n")
-                                        
-                                        if col['Sector'] in sectors:
-                                            logging.info(f"Settore di appartenenza dell'azione scelta è tra quelli scelti dall'utente.\n")
-                                            sectFind = True
-                                            break
-                                        else:
-                                            logging.info(f"Settore di appartenenza dell'azione scelta non è tra quelli scelti dall'utente, si passa alla prossima azione.\n")
-                                            
+                            # Inserimento dei dati relativi all'acquisto nel database
+                            insertDataDB.insertInPurchase(datetime.now(), ticket, volume, chosen_symbol, price, cur, conn)
 
-                        # Compro l'azione corrispondente
-                        result = info_order_send.buy_actions_of_title(pool_Actions_Nasdaq[symbolRandom])
+                            # Aggiornamento del budget di investimento dopo l'acquisto dell'azione
+                            budgetInvestimenti -= (price * volume)
 
-                        if result is not None:
-                            logging.info(f"Acquisto completato: {result}\n")
+                            # Aggiornamento del budget dopo l'acquisto dell'azione
+                            budget = accountInfo.get_balance_account()
+                            equity = accountInfo.get_equity_account()
+                            margin = accountInfo.get_margin_account()
+
+                            # Aggiornamento dello stato dell'agent nel database
+                            insertDataDB.insertInDataTrader(
+                                datetime.now(), stateAgent, initial_budget, budget, equity, margin,
+                                profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn
+                            )
+
+                            logging.info(f"Acquistata azione {chosen_symbol}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}\n")
+                            logging.info("---------------------------------------------------------------------------------\n\n")
                         else:
-                            logging.error("Acquisto fallito.\n")
-
-                        # Si ottengono i dati relativi all'acquisto
-                        price = result.price
-                        volume = result.volume
-                        ticket = result.order
-
-                        # Inserimento dei dati relativi all'acquisto nel database
-                        insertDataDB.insertInPurchase(datetime.now(), ticket, volume, pool_Actions_Nasdaq[symbolRandom], price, cur, conn)
-
-                        # Aggiornamento del budget di investimento dopo l'acquisto dell'azione
-                        budgetInvestimenti = budgetInvestimenti - (price * volume)
-
-                        # Aggiornamento del budget dopo l'acquisto dell'azione
-                        budget = accountInfo.get_balance_account() 
-                        equity = accountInfo.get_equity_account()
-                        margin = accountInfo.get_margin_account()
-
-                        # Aggiornamento dello stato dell'agent nel database
-                        insertDataDB.insertInDataTrader(datetime.now(), stateAgent, initial_budget, budget, equity, margin ,profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-                        
-                        logging.info(f"Acquistata azione {pool_Actions_Nasdaq[symbolRandom]}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}\n")
-                        logging.info("---------------------------------------------------------------------------------\n\n")
+                            logging.info(f"Settore di appartenenza dell'azione scelta ({sector}) non è tra quelli scelti dall'utente, si passa alla prossima azione.\n")
 
                     logging.info(f"Cambio di stato da PURCHASE a WAIT\n\n")
 
-                    # Dopo lo stato di acquisto il programma entro nello stato di attesa
+                    # Dopo lo stato di acquisto il programma entra nello stato di attesa
                     stateAgent = agentState.AgentState.WAIT
-
 
                 ######################## fine PURCHASE
 
-
-
+                
                 ######################## inizio WAIT
 
                 # Il programma si interrompe per 15 minuti poi riparte
@@ -274,10 +267,6 @@ def main(sectors):
                     stateAgent = agentState.AgentState.SALE
                     
                 ######################## fine WAIT
-
-
-
-            
 
         # fine while True:
 
