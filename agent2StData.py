@@ -4,7 +4,6 @@
 # sleep di 15 minuti
 
 # import MetaTrader5 as mt5
-from datetime import datetime
 import connectDB, insertDataDB, agentState
 import psycopg2
 import time
@@ -20,13 +19,9 @@ import pandas as pd
 import traceback
 
 
-
-
 def main(sectors, date):
     # configurazione del logging
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-    )
+    logging.basicConfig( level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s" )
     
     """symbols = ['AAL', 'AAPL', 'ABNB', 'ACAD', 'ACGL', 'ACIW', 'ADBE', 'ADI', 'ADP', 'ADSK', 'AGIO', 'AKAM', 'ALGN', 'ALRM', 'AMAT', 'AMD', 'AMED', 
                'AMGN', 'AMKR', 'AMZN', 'APLS', 'APPS', 'ARWR', 'ATSG', 'AVGO', 'AZN', 'BCRX', 'BIDU', 'BILI', 'BKNG', 'BL', 'BLMN', 'BMBL', 'BMRN', 
@@ -45,7 +40,6 @@ def main(sectors, date):
                'SRPT', 'SSRM', 'STX', 'SWKS', 'SYNA', 'TMUS', 'TRIP', 'TRMB', 'TROW', 'TSCO', 'TSLA', 'TTEK', 'TTMI', 'TTWO', 'TXG', 'TXRH', 'UAL', 
                'UCTT', 'URBN', 'VCYT', 'VECO', 'VIAV', 'VIRT', 'VRNS', 'VRNT', 'VRSK', 'VRSN', 'VRTX', 'VSAT', 'WB', 'WDC', 'WERN', 'WING', 'WIX', 
                'WMG', 'WSC', 'WSFS', 'WWD', 'XP', 'XRAY', 'YY', 'ZD', 'ZG', 'ZI', 'ZLAB', 'ZM']
-    """
     
     symbols = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'COST', 'NFLX', 'AMD', 'AZN', 'QCOM', 'ADBE', 'PEP', 'TMUS', 'PDD', 'AMAT', 'CSCO', 
      'AMGN', 'MU', 'ISRG', 'CMCSA', 'LRCX', 'BKNG', 'INTC', 'VRTX', 'REGN', 'ADI', 'ADP', 'ABNB', 'CRWD', 'SBUX', 'MDLZ', 'CDNS', 'GILD', 'CTAS', 'CME', 
@@ -58,13 +52,22 @@ def main(sectors, date):
      'FORM', 'SLM', 'GBDC', 'POWI', 'LOPE', 'URBN', 'PTEN', 'VIRT', 'CAR', 'GH', 'SANM', 'NEOG', 'SYNA', 'SBRA', 'RARE', 'LITE', 'PCH', 'SGRY', 'IRDM', 
      'SHOO', 'HCM', 'SKYW', 'QFIN', 'GLNG', 'FOLD', 'KTOS', 'IRTC', 'RUN', 'LIVN', 'BL', 'PTCT', 'PENN', 'CARG', 'VECO', 'WSFS', 'NMIH', 'GOGL', 'ZD', 'PGNY', 
      'KLIC', 'TRIP', 'QDEL', 'TXG', 'IART', 'WERN']
+    """
+    
+    symbols = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'COST', 'NFLX', 'AMD', 'AZN', 'QCOM', 'ADBE']
+    
+    initialDate = date
         
+    # Converti la stringa in un oggetto datetime
+    initialDate = datetime.strptime(initialDate, '%Y-%m-%d %H:%M:%S')
 
+    # Aggiungi 1 anno usando relativedelta
+    endDate = initialDate + relativedelta(years=1)
 
-    # fasi
-    # 1. Acquisto di azioni random dal pool fino a esaurimento budget
-    # 2. Vendita delle azioni che sono salite del TP% = 1 rispetto al prezzo d'acquisto
-
+    # Converti endDate in una stringa formattata
+    endDate = endDate.strftime('%Y-%m-%d %H:%M:%S')
+    
+        
     try:
         # Connessione al database
         cur, conn = connectDB.connect_nasdaq()
@@ -76,21 +79,9 @@ def main(sectors, date):
         cur.execute("SELECT * FROM DataTrader ORDER BY date DESC LIMIT 1")
         last_state = cur.fetchone()
 
-        initialDate = date
-        
-        # Converti la stringa in un oggetto datetime
-        initialDate = datetime.strptime(initialDate, '%Y-%m-%d %H:%M:%S')
-
-        # Aggiungi 1 anno usando relativedelta
-        endDate = initialDate + relativedelta(years=1)
-
-        # Converti endDate in una stringa formattata
-        endDate = endDate.strftime('%Y-%m-%d %H:%M:%S')
-
         # Se last_state contiene un valore, viene destrutturato in variabili individuali.
         if last_state:
             ( last_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti ) = last_state
-            
             logging.info( f"Ripresa stato dell'agent: {stateAgent}, Budget: {budget}, Profitto totale USD: {profitTotalUSD}, Profitto totale percentuale: {profitTotalPerc}, Budget Mantenimento: {budgetMantenimento}, Budget Investimenti: {budgetInvestimenti}\n" )
 
             if stateAgent == "WAIT":
@@ -112,47 +103,33 @@ def main(sectors, date):
             date = last_date
             date = date.strftime('%Y-%m-%d %H:%M:%S')
             
+            # Carica gli ultimi ticket di acquisto e vendita
             cur.execute( f"SELECT ticket FROM purchase ORDER BY ticket DESC LIMIT 1;" )
             ticketPuc = int(cur.fetchone()[0])
-            
             cur.execute( f"SELECT ticket_sale FROM sale ORDER BY ticket_sale DESC LIMIT 1;" )
             ticketSale = int(cur.fetchone()[0])
 
         # Se last_state è vuoto, allora l'agente si trova nello stato iniziale.
         else:
-            # Inizializza delle variabili se non ci sono dati precedenti
-            budget = 50000
-            equity = 0
-            margin = 0
-            initial_budget = budget
-            budgetInvestimenti = budget
-
+            # Inizializzazione in caso di primo utilizzo
+            budget = budgetInvestimenti = initial_budget = 50000
+            equity = margin = 0
             budgetMantenimento = 0
-            profitTotalUSD = 0
-            profitTotalPerc = 0
-            
-            ticketPuc = 0
-            ticketSale = 0
+            profitTotalUSD = profitTotalPerc = 0
+            ticketPuc = ticketSale = 0
             
             stateAgent = agentState.AgentState.INITIAL
             
             dateObject = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
-
+            
             # Inserimento dei dati iniziali dell'agente nel database
-            insertDataDB.insertInDataTrader(
-                dateObject,
-                stateAgent,
-                initial_budget,budget, equity, margin,
-                profitTotalUSD, profitTotalPerc,
-                budgetMantenimento, budgetInvestimenti,
-                cur, conn,
-            )
+            insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+            
             logging.info(f"Budget iniziale: {budget}\n")
-
             stateAgent = agentState.AgentState.SALE
 
-        # Il ciclo principale esegue le operazioni di trading
 
+        # Il ciclo principale esegue le operazioni di trading
         while True:
 
             ######################## inizio SALE
@@ -161,11 +138,7 @@ def main(sectors, date):
 
                 # Recupera le vendite nel db.
                 cur.execute("SELECT ticket_pur FROM sale")
-                salesDB = cur.fetchall()
-
-                sales = []
-                for sal in salesDB:
-                    sales.append(sal[0])
+                sales = {int(sale[0]) for sale in cur.fetchall()}
 
                 logging.info(f"I ticket delle vendite già effettuate sono: {sales}\n")
 
@@ -174,21 +147,19 @@ def main(sectors, date):
                 purchasesDB = cur.fetchall()
 
                 for pur in purchasesDB:
-                    ticketP = pur[1]
-                    volume = pur[2]
-                    symbol = pur[3]
-                    price_open = pur[4]
+                    ticketP, volume, symbol, price_open = pur[1], pur[2], pur[3], pur[4]
+                    
+                    if int(ticketP) in sales:
+                        continue
                     
                     cur.execute( f"SELECT open_price FROM nasdaq_actions WHERE symbol = '{symbol}' AND time_value_it='{date}';" )    
                     result = cur.fetchone()
 
-                    if result is not None:
-                        price_current = result[0]
-                    
-                    else:
-                        logging.info(f"Simbolo {symbol} non presente nella data in input.\n")
+                    if not result:
+                        logging.info(f"Simbolo {symbol} non presente alla data: {start_date}")
                         continue
-                    
+
+                    price_current = result[0]
 
                     # Se il prezzo corrente è maggiore del prezzo iniziale di acquisto c'è un qualche profitto
                     if price_current > price_open:
@@ -200,8 +171,6 @@ def main(sectors, date):
 
                         # Rivendita con l'1 % di profitto
                         if perc_profit > 0.01:
-
-                            logging.info( f"Si può vendere {symbol} poiché c'è un profitto del {perc_profit}\n" )
 
                             # aggiorno il budget
                             budgetInvestimenti = budgetInvestimenti + ( price_open * volume )
@@ -216,39 +185,23 @@ def main(sectors, date):
                             
                             dateObject = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
 
-                            # Inserimento dei dati relativi alla vendita del simbolo azionario nel database
-                            insertDataDB.insertInSale(
-                                dateObject,
-                                ticket_pur=ticketP, ticket_sale=ticketSale,
-                                volume=volume, symbol=symbol,
-                                priceSale=price_current, pricePurchase=price_open,
-                                profitUSD=profit, profitPerc=perc_profit,
-                                cur=cur, conn=conn,
-                            )
+                            # Inserimento dei dati relativi alla vendita del simbolo azionario nel database                            
+                            insertDataDB.insertInSale(dateObject, ticketP, ticketSale, volume, symbol, price_current, price_open, profit, perc_profit, cur, conn)
 
-                
                             # Aggiornamento del valore dei profitti totali .
                             profitTotalUSD += profit * volume
                             profitTotalPerc = perc_profit
-
+                            
                             # Aggiornamento dello stato dell'agent nel database
-                            insertDataDB.insertInDataTrader(
-                                dateObject,
-                                stateAgent,
-                                initial_budget, budget, equity, margin,
-                                profitTotalUSD, profitTotalPerc,
-                                budgetMantenimento, budgetInvestimenti,
-                                cur,  conn,
-                            )
+                            insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
-                            logging.info( f"Venduta azione {symbol}, profitto: {profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n")
-                            logging.info( "---------------------------------------------------------------------------------\n\n" )
+                            logging.info( f"Venduta azione {symbol}, profitto: {profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}\n---------------------------------------------------------------------------------\n\n")
 
                 price_open = -1
                 price_current = -1
                 
                 # Una volta controllati tutti i simboli azionari si passa allo stato di compravendita.
-                logging.info(f"Cambio di stato da SALE a PURCHASE\n\n")
+                #logging.info(f"Cambio di stato da SALE a PURCHASE\n\n")
                 stateAgent = agentState.AgentState.PURCHASE
 
             ######################## fine SALE
@@ -258,83 +211,55 @@ def main(sectors, date):
             if stateAgent == agentState.AgentState.PURCHASE:
                 logging.info(f"Agent entrato nello stato Purchase\n")
 
+                # Carica i settori e i simboli dal file CSV
+                with open("csv_files/nasdaq_symbols.csv", mode="r") as file:
+                    csv_reader = csv.DictReader(file)
+                    symbols_data = {row["Symbol"]: row["Sector"] for row in csv_reader}
+
+                # Eseguire una query all'inizio per ottenere tutti i simboli e i prezzi
+                cur.execute(f"SELECT symbol, open_price FROM nasdaq_actions WHERE time_value_it = '{date}';")
+                symbolsQ = cur.fetchall()  # Recupera i dati come lista di tuple
+
+                # Converte symbolsQ in un dizionario per un accesso più veloce
+                symbolsQ_dict = {sy[0]: sy[1] for sy in symbolsQ}  # {symbol: price}
+
                 # Acquisto di azioni finché c'è budget
                 while budgetInvestimenti > 0:
 
-                    symbInQ = False
-                    while symbInQ == False:
+                    # Scelgo un'azione random dal pool
+                    symbolRandom = random.randint(0, len(symbols) - 1)
+                    chosen_symbol = symbols[symbolRandom]
 
-                        # Scelgo un'azione random dal pool
-                        symbolRandom = random.randint(0, len(symbols) - 1)
+                    # Verifica se il simbolo è in un settore accettato e se è presente nelle query SQL
+                    if chosen_symbol in symbols_data and symbols_data[chosen_symbol] in sectors:
+                        if chosen_symbol in symbolsQ_dict:
+                            price = symbolsQ_dict[chosen_symbol]
 
-                        logging.info( f"Possiamo acquistare perché il budget dell'investimento è > 0: simbolo scelto randomicamente tra il pool delle azioni accettate dal broker TickMill è: {symbols[symbolRandom]}\n"  )
+                            # Calcolo volume e aggiornamento budget
+                            volume = float(math.floor(1000 / price))
+                            ticketPuc += 1
+                            dateObject = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
 
-                        sectFind = False
-                        while sectFind == False:
-                            # Apri il file CSV in modalità lettura
-                            with open("csv_files/nasdaq_symbols.csv", mode="r") as file:
-                                # Crea un lettore CSV con DictReader
-                                csv_reader = csv.DictReader(file)
+                            # Inserimento nel database
+                            insertDataDB.insertInPurchase(dateObject, ticketPuc, volume, symbolRandom, price, cur, conn)
+                            budgetInvestimenti -= (price * volume)
 
-                                for col in csv_reader:
-                                    if ( col["Symbol"] == symbols[symbolRandom] ):
-                                        #logging.info( f"Settore di appartenenza dell'azione scelta: {col['Sector']}\n" )
+                            # Aggiornamento stato
+                            insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
-                                        if col["Sector"] in sectors:
-                                            #logging.info( f"Settore di appartenenza dell'azione scelta è tra quelli scelti dall'utente.\n")
-                                            sectFind = True
-                                            break
-                                        else:
-                                            #logging.info( f"Settore di appartenenza dell'azione scelta non è tra quelli scelti dall'utente, si passa alla prossima azione.\n" )
-                                            sectFind = False
-
-                        cur.execute( f"SELECT symbol, open_price FROM nasdaq_actions WHERE time_value_it = '{date}';" )
-                        symbolsQ = cur.fetchall()
-                        
-                        #symbolsName = []
-                        for sy in symbolsQ:
-                            if symbols[symbolRandom] == sy[0]:
-                                
-                                price = sy[1]
-                                symbInQ = True
-                                logging.info( f"Simbolo scelto è tra quelli della data in input.\n" )
-
-                    volume = float(math.floor(1000 / price))
-                    logging.info(f"\n volume:{volume}\n")
-
-                    ticketPuc += 1
-                    
-                    dateObject = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
-
-                    # Inserimento dei dati relativi all'acquisto nel database
-                    insertDataDB.insertInPurchase(
-                        dateObject,
-                        ticketPuc,
-                        volume,
-                        symbols[symbolRandom],
-                        price,
-                        cur, conn
-                    )
-
-                    # Aggiornamento del budget di investimento dopo l'acquisto dell'azione
-                    budgetInvestimenti = budgetInvestimenti - (price * volume)
-
-                    # Aggiornamento dello stato dell'agent nel database
-                    insertDataDB.insertInDataTrader(
-                        dateObject,
-                        stateAgent,
-                        initial_budget, budget, equity, margin,
-                        profitTotalUSD, profitTotalPerc,
-                        budgetMantenimento, budgetInvestimenti,
-                        cur, conn
-                    )
-
-                    logging.info(f"Acquistata azione {symbols[symbolRandom]}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}\n" )
-                    logging.info("---------------------------------------------------------------------------------\n\n" )
+                            # Logging dell'acquisto
+                            if logging.getLogger().isEnabledFor(logging.INFO):
+                                logging.info(f"Acquistata azione {chosen_symbol}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}")
+                        else:
+                            if logging.getLogger().isEnabledFor(logging.INFO):
+                                logging.info(f"Simbolo {chosen_symbol} non trovato nella data specificata.")
+                    else:
+                        if logging.getLogger().isEnabledFor(logging.INFO):
+                            logging.info(f"Settore di appartenenza per {chosen_symbol} non valido o non trovato.")
 
                 logging.info(f"Cambio di stato da PURCHASE a WAIT\n\n")
 
-                # Dopo lo stato di acquisto il programma entro nello stato di attesa
+                # Dopo lo stato di acquisto il programma entra nello stato di attesa
                 stateAgent = agentState.AgentState.WAIT
 
             ######################## fine PURCHASE
@@ -342,26 +267,15 @@ def main(sectors, date):
 
 
             ######################## inizio WAIT
-
-            # Il programma si interrompe per 15 minuti poi riparte
             if stateAgent == agentState.AgentState.WAIT:
                 logging.info(f"Agent entrato nello stato Wait\n")
                 
                 dateObject = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
 
                 # Aggiornamento dello stato dell'agent nel database
-                insertDataDB.insertInDataTrader(
-                    dateObject,
-                    stateAgent,
-                    initial_budget, budget, equity, margin,
-                    profitTotalUSD, profitTotalPerc,
-                    budgetMantenimento, budgetInvestimenti,
-                    cur, conn
-                )
-                logging.info("Interruzione del programma.\n")
+                insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
-                # Il programma si interrompe
-                cur.execute( f"SELECT time_value_it  FROM nasdaq_actions WHERE time_value_it > '{date}' ORDER BY time_value_it ASC LIMIT 1;" )
+                cur.execute( f"SELECT time_value_it FROM nasdaq_actions WHERE time_value_it > '{date}' ORDER BY time_value_it ASC LIMIT 1;" )
                 date = cur.fetchone()[0]
                 date = date.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -438,6 +352,9 @@ def getSectorSymbols():
     print(settori)
 
     print(len(key_diz))
+    
+    cur.close()
+    conn.close()
 
     # Ritorna il dizionario con i simboli e il settore di appartenenza
     return diz
@@ -457,6 +374,9 @@ if __name__ == "__main__":
     cur.execute("SELECT * FROM sector;")
     sectors = [ sec[0] for sec in cur.fetchall() ]  # Estrai solo il primo elemento di ogni tupla
     print(sectors)
+    
+    cur.close()
+    conn.close()
 
     i = 1
     for sec in sectors:
