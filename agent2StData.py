@@ -240,7 +240,7 @@ def main(sectors, date):
                             dateObject = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
 
                             # Inserimento nel database
-                            insertDataDB.insertInPurchase(dateObject, ticketPuc, volume, symbolRandom, price, cur, conn)
+                            insertDataDB.insertInPurchase(dateObject, ticketPuc, volume, chosen_symbol, price, cur, conn)
                             budgetInvestimenti -= (price * volume)
 
                             # Aggiornamento stato

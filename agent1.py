@@ -1,5 +1,6 @@
 # Raccolta dei dati e inserimento nel database postgreSQL.
 
+
 import MetaTrader5 as mt5
 import session_management, info_order_send, symbolsAcceptedByTickmill, insertDataDB
 import psycopg2
@@ -91,6 +92,7 @@ def main():
 
         # Ottenimento delle azioni del Nasdaq accettate dal broker TickMill.
         symbols = symbolsAcceptedByTickmill.getSymbolsAcceptedByTickmill()
+        print(f"Symbols:{symbols}")
 
         # Controllo se i simboli azionari sono presenti nel database
         for symbol in symbols:
@@ -101,6 +103,7 @@ def main():
 
             # Nelle query inserire apici '{symbol}' per far sì che vengano trattati come stringhe.
 
+            """
             # Recupera la data meno recente del db
             cur.execute(f"SELECT time_value_it FROM nasdaq_actions WHERE symbol = '{symbol}' ORDER BY time_value_it ASC LIMIT 1")
             old_date = cur.fetchone()
@@ -108,6 +111,11 @@ def main():
             # Recupera la data più recente del db
             cur.execute(f"SELECT time_value_it FROM nasdaq_actions WHERE symbol = '{symbol}' ORDER BY time_value_it DESC LIMIT 1")
             last_date = cur.fetchone()
+            """
+             
+            # Esegui una sola query per ottenere sia la data più vecchia che quella più recente
+            cur.execute(f"SELECT MIN(time_value_it), MAX(time_value_it) FROM nasdaq_actions WHERE symbol = '{symbol}'")
+            old_date, last_date = cur.fetchone()
 
             # Se non ci sono dati nel database, scarica tutti i dati storici fino a 2 giorni fa
             if old_date is None and last_date is None:
@@ -123,7 +131,7 @@ def main():
             else:
 
                 # Scaricamento dei dati di mercato per le date mancanti fino a 2 giorni fa
-                if last_date[0] < datetime.now()- timedelta(days=2):
+                if last_date < datetime.now() - timedelta(days=2):
                     logging.info("Scaricamento dati per le azioni con dati mancanti !\n")
 
                     # Scarico i dati tramite la funzione copy_rates_range e li inserisco nel database: ad esempio se last_date corrisponde a 2024-7-10 e 
@@ -143,6 +151,25 @@ def main():
             # Ritorna un intero corrispondente al giorno della settimana ( 0: Monday, ... , 6: Sunday )
             dayOfWeek = datetime.today().weekday() 
             
+            # Se il giorno della settimana è sabato o domenica mettiamo in pausa il programma poiché il mercato è chiuso
+            if dayOfWeek in {5, 6}:
+                days_to_wait = 2 if dayOfWeek == 5 else 1
+                logging.info(f"Pausa del trading agent poiché è {'sabato' if dayOfWeek == 5 else 'domenica'}.\n")
+                time_module.sleep(days_to_wait * 86400)
+                continue
+
+            start_date = datetime.now() - timedelta(days=1)
+            end_date = datetime.now()
+
+            for symbol in symbols:
+                logging.info(f"Scaricamento dati per il giorno {start_date} !\n")
+                insertDataDB.downloadInsertDB_data(symbol, mt5.TIMEFRAME_M15, start_date, end_date, cur, conn)
+
+            logging.info("Dormi per un giorno.")
+            time_module.sleep(86400)
+            
+            
+            """
             # Se il giorno della settimana è sabato o domenica mettiamo in pausa il programma poiché il mercato è chiuso
             if dayOfWeek == 5 or dayOfWeek == 6:
                 logging.info(f"Pausa del trading agent poiché è sabato o domenica. {dayOfWeek}\n")
@@ -208,6 +235,9 @@ def main():
             # Aggiornamento delle date dopo la pausa per scaricaricare i dati di mercato del giorno precedente
             start_date = end_date
             end_date = datetime.now()
+            
+            """
+            
             
     except Exception as e:
         logging.critical(f"Uncaught exception: {e}")

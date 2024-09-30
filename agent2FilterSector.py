@@ -157,7 +157,7 @@ def main(sectors):
                                         budgetMantenimento = budgetMantenimento + (profit_90Perc * volume)
 
                                         # Inserimento dei dati relativi alla vendita del simbolo azionario nel database
-                                        insertDataDB.insertInSale(datetime.now(), ticket_pur=ticket, ticket_sale=ticket_sale, volume=volume, symbol=act, priceSale=price_current, pricePurchase=price_open, profitUSD=profit, profitPerc=perc_profit, lossUSD=0, lossPerc=0 ,cur=cur, conn=conn)    
+                                        insertDataDB.insertInSale(datetime.now(), ticket_pur=ticket, ticket_sale=ticket_sale, volume=volume, symbol=act, priceSale=price_current, pricePurchase=price_open, profitUSD=profit, profitPerc=perc_profit, cur=cur, conn=conn)    
 
                                         # Aggiornamento del budget dopo la vendita con inclusi i profitti
                                         budget = accountInfo.get_balance_account() 

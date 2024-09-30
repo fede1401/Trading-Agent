@@ -172,18 +172,18 @@ def getSectorSymbols():
 # Codice eseguibile solo se il file è eseguito come script principale
 if __name__ == '__main__':
     # Effettua il login su MetaTrader5 usando le credenziali dal modulo session_management
-    #session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
+    session_management.login_metaTrader5(account=session_management.account, password=session_management.password, server=session_management.server)
 
     # Ottieni i simboli dal file CSV
     #symbols = symbolsNasdaqCSV()
     #print(symbols)
     
     # Ottieni i simboli accettati dal broker Tickmill
-    #symbolsAccepted = getSymbolsAcceptedByTickmill()
-    #print(len(symbolsAccepted))
+    symbolsAccepted = getSymbolsAcceptedByTickmill()
+    print(symbolsAccepted)
 
     # Ottieni i simboli ordinati per capitalizzazione di mercato
     # getSymbolsCapDesc()
 
-    sector = getSectorSymbols()
-    print(sector)
+    #sector = getSectorSymbols()
+    #print(sector)

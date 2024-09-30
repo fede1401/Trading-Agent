@@ -4,7 +4,8 @@ import insertDataDB
 
 
 ############ variabili locali programma ###################
-path = 'C:\\Program Files\\MetaTrader 5\\terminal64.exe'
+#path = 'C:\\Program Files\\MetaTrader 5\\terminal64.exe'
+path = 'Z:\\home\\federico\\.mt5\\drive_c\\Program Files\\MetaTrader 5\\terminal64.exe'
 account = 25142282
 password = 'xJ5P=vC,(S|!'
 server = 'TickmillEU-Demo'
@@ -27,7 +28,7 @@ def initializeMT5():
 def login_metaTrader5(account, password, server):
 
     # Inizializza e stabilisce una connessione con MetaTrader5
-    if not mt5.initialize(): 
+    if not mt5.initialize(path): 
         # Se l'inizializzazione fallisce, stampa il codice dell'errore e ritorna False
         print("Failed to initialize, error code: ", mt5.last_error())
         return False
