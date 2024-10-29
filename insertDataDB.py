@@ -3,7 +3,7 @@ import psycopg2
 import numpy as np
 import connectDB
 import logging
-import MetaTrader5 as mt5
+#import MetaTrader5 as mt5
 
 
 

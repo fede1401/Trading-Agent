@@ -189,7 +189,7 @@ def main(sectors, date):
 
                             # Aggiornamento del valore dei profitti totali .
                             profitTotalUSD += profit * volume
-                            profitTotalPerc = perc_profit
+                            profitTotalPerc = (profitTotalUSD/initial_budget)*100
                             
                             # Aggiornamento dello stato dell'agent nel database
                             insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
@@ -278,7 +278,7 @@ def main(sectors, date):
                 date = cur.fetchone()[0]
                 date = date.strftime('%Y-%m-%d %H:%M:%S')
 
-                if date == endDate:
+                if date >= endDate:
                     break
 
                 logging.info(f"Cambio di stato da WAIT a SALE\n\n")
