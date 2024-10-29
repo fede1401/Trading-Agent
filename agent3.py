@@ -22,9 +22,9 @@ def main(sectors):
     # configurazione del logging
     logging.basicConfig( level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s" )
     
-    logging.disable(logging.CRITICAL)
+    #logging.disable(logging.CRITICAL)
     
-    symbols = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'COST', 'NFLX', 'AMD', 'AZN', 'QCOM', 'ADBE', 'PEP', 'TMUS', 'PDD', 'AMAT', 'CSCO', 
+    """symbols = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'COST', 'NFLX', 'AMD', 'AZN', 'QCOM', 'ADBE', 'PEP', 'TMUS', 'PDD', 'AMAT', 'CSCO', 
      'AMGN', 'MU', 'ISRG', 'CMCSA', 'LRCX', 'BKNG', 'INTC', 'VRTX', 'REGN', 'ADI', 'ADP', 'ABNB', 'CRWD', 'SBUX', 'MDLZ', 'CDNS', 'GILD', 'CTAS', 'CME', 
      'MAR', 'PYPL', 'ORLY', 'NTES', 'COIN', 'MRNA', 'ADSK', 'MNST', 'FTNT', 'JD', 'DASH', 'PAYX', 'MPWR', 'DDOG', 'VRSK', 'ACGL', 'EA', 'FAST', 'NDAQ', 
      'FANG', 'BIDU', 'CTSH', 'TSCO', 'CDW', 'FSLR', 'TTWO', 'EBAY', 'ICLR', 'MSTR', 'TROW', 'WDC', 'DLTR', 'STX', 'BNTX', 'LPLA', 'PTC', 'SBAC', 'ENTG', 
@@ -35,6 +35,8 @@ def main(sectors):
      'FORM', 'SLM', 'GBDC', 'POWI', 'LOPE', 'URBN', 'PTEN', 'VIRT', 'CAR', 'GH', 'SANM', 'NEOG', 'SYNA', 'SBRA', 'RARE', 'LITE', 'PCH', 'SGRY', 'IRDM', 
      'SHOO', 'HCM', 'SKYW', 'QFIN', 'GLNG', 'FOLD', 'KTOS', 'IRTC', 'RUN', 'LIVN', 'BL', 'PTCT', 'PENN', 'CARG', 'VECO', 'WSFS', 'NMIH', 'GOGL', 'ZD', 'PGNY', 
      'KLIC', 'TRIP', 'QDEL', 'TXG', 'IART', 'WERN']
+     """
+    symbols = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'COST', 'NFLX']
 
     try:          
         # Connessione al database
@@ -69,46 +71,6 @@ def main(sectors):
             # Converti endDate in una stringa formattata
             endDate = endDate.strftime('%Y-%m-%d %H:%M:%S')
                         
-                               
-            # Recupera l'ultimo stato dell'agent nel database:
-            #cur.execute("SELECT * FROM DataTrader ORDER BY date DESC LIMIT 1")
-            #last_state = cur.fetchone()
-
-            # Se last_state contiene un valore, viene destrutturato in variabili individuali.
-            """
-            if last_state:
-                    ( last_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti ) = last_state
-                    logging.info( f"Ripresa stato dell'agent: {stateAgent}, Budget: {budget}, Profitto totale USD: {profitTotalUSD}, Profitto totale percentuale: {profitTotalPerc}, Budget Mantenimento: {budgetMantenimento}, Budget Investimenti: {budgetInvestimenti}\n" )
-
-                    if stateAgent == "WAIT":
-                        stateAgent = agentState.AgentState.WAIT
-
-                    if stateAgent == "SALE":
-                        stateAgent = agentState.AgentState.SALE
-
-                    if stateAgent == "PURCHASE":
-                        stateAgent = agentState.AgentState.PURCHASE
-
-                    # In questo modo se il programma viene bloccato e rimane nello stato INITIAL può entrare nel While e vedere se ci sono azioni da vendere
-                    if stateAgent == "INITIAL":
-                        logging.info(f"Cambio di stato da WAIT a SALE\n")
-                        stateAgent = agentState.AgentState.SALE
-
-                    logging.info(f"StateAgent: {stateAgent}\n")
-                    
-                    date = last_date
-                    date = date.strftime('%Y-%m-%d %H:%M:%S')
-                    
-                    # Carica gli ultimi ticket di acquisto e vendita
-                    cur.execute( f"SELECT ticket FROM purchase ORDER BY ticket DESC LIMIT 1;" )
-                    ticketPuc = int(cur.fetchone()[0])
-                    cur.execute( f"SELECT ticket_sale FROM sale ORDER BY ticket_sale DESC LIMIT 1;" )
-                    ticketSale = int(cur.fetchone()[0])
-
-            # Se last_state è vuoto, allora l'agente si trova nello stato iniziale.
-            else:
-                    
-            """
             # Inizializzazione in caso di primo utilizzo
             budget = budgetInvestimenti = initial_budget = 50000
             equity = margin = 0
