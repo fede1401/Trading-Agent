@@ -74,7 +74,7 @@ def downloadInsertDB_data(symbol, timeframe, start_date, end_date, cur, conn):
 # Funzione per inserire un acquisto di un simbolo azionario nel database
 def insertInPurchase (date, ticket, volume, symbol, price, cur, conn):
     if cur is not None and conn is not None:
-        print("\nConnessione al database nasdaq avvenuta con successo.\n")
+        #print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella Purchase
@@ -103,7 +103,7 @@ def insertInPurchase (date, ticket, volume, symbol, price, cur, conn):
 # Funzione per inserire una vendita (chiusura di una posizione) di un simbolo azionario nel database
 def insertInSale (date, ticket_pur, ticket_sale, volume, symbol, priceSale, pricePurchase, profitUSD, profitPerc, cur, conn):
     if cur is not None and conn is not None:
-        print("\nConnessione al database nasdaq avvenuta con successo.\n")
+        #print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella Sale
@@ -135,7 +135,7 @@ def insertInSale (date, ticket_pur, ticket_sale, volume, symbol, priceSale, pric
 # Funzione per inserire dati relativi allo stato del trader nel database
 def insertInDataTrader(date, stateAg, initialBalance, balance, equity, margin, profitUSD, profitPerc, deposit, credit, cur, conn):
     if cur is not None and conn is not None:
-        print("\nConnessione al database nasdaq avvenuta con successo.\n")
+        #print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella DataTrader
@@ -161,14 +161,14 @@ def insertInDataTrader(date, stateAg, initialBalance, balance, equity, margin, p
         # Conferma la transazione e stampa un messaggio
         conn.commit()
             
-        print("Dati relativi allo stato del trader salvati nel db.\n")
+        #print("Dati relativi allo stato del trader salvati nel db.\n")
         
 
 
 # Funzione per inserire dati relativi al login dell'utente nel database
 def insertInLoginDate(nameSurname, username, server, cur, conn):
     if cur is not None and conn is not None:
-        print("\nConnessione al database nasdaq avvenuta con successo.\n")
+        #print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella loginDate
@@ -189,13 +189,13 @@ def insertInLoginDate(nameSurname, username, server, cur, conn):
         # Conferma la transazione e stampa un messaggio
         conn.commit()
             
-        print("Dati relativi al login dell'utente salvati nel db.\n")
+        #print("Dati relativi al login dell'utente salvati nel db.\n")
         
 
 
 def insertInSector(nome, cur, conn):
     if cur is not None and conn is not None:
-        print("\nConnessione al database nasdaq avvenuta con successo.\n")
+        #print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella loginDate

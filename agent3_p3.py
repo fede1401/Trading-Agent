@@ -22,7 +22,7 @@ def main(sectors):
     # configurazione del logging
     logging.basicConfig( level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s" )
     
-    logging.disable(logging.CRITICAL)
+    #logging.disable(logging.CRITICAL)
     
     """symbols = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'COST', 'NFLX', 'AMD', 'AZN', 'QCOM', 'ADBE', 'PEP', 'TMUS', 'PDD', 'AMAT', 'CSCO', 
      'AMGN', 'MU', 'ISRG', 'CMCSA', 'LRCX', 'BKNG', 'INTC', 'VRTX', 'REGN', 'ADI', 'ADP', 'ABNB', 'CRWD', 'SBUX', 'MDLZ', 'CDNS', 'GILD', 'CTAS', 'CME', 
@@ -35,8 +35,7 @@ def main(sectors):
      'FORM', 'SLM', 'GBDC', 'POWI', 'LOPE', 'URBN', 'PTEN', 'VIRT', 'CAR', 'GH', 'SANM', 'NEOG', 'SYNA', 'SBRA', 'RARE', 'LITE', 'PCH', 'SGRY', 'IRDM', 
      'SHOO', 'HCM', 'SKYW', 'QFIN', 'GLNG', 'FOLD', 'KTOS', 'IRTC', 'RUN', 'LIVN', 'BL', 'PTCT', 'PENN', 'CARG', 'VECO', 'WSFS', 'NMIH', 'GOGL', 'ZD', 'PGNY', 
      'KLIC', 'TRIP', 'QDEL', 'TXG', 'IART', 'WERN']
-    """
-    
+     """
     symbols = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'AVGO', 'TSLA', 'COST', 'NFLX']
 
     try:          
@@ -78,7 +77,7 @@ def main(sectors):
             endDate = endDate.strftime('%Y-%m-%d %H:%M:%S')
                         
             # Inizializzazione in caso di primo utilizzo
-            budget = budgetInvestimenti = initial_budget = 10000
+            budget = budgetInvestimenti = initial_budget = 50000
             equity = margin = 0
             budgetMantenimento = 0
             profitTotalUSD = profitTotalPerc = 0
@@ -93,6 +92,8 @@ def main(sectors):
                     
             logging.info(f"Budget iniziale: {budget}\n")
             stateAgent = agentState.AgentState.SALE
+            
+            
                     
               
             # Il ciclo principale esegue le operazioni di trading
@@ -177,76 +178,61 @@ def main(sectors):
                     ######################## inizio PURCHASE
                     if stateAgent == agentState.AgentState.PURCHASE:
                         logging.info(f"Agent entrato nello stato Purchase\n")
-                        
-                        copyList = symbols.copy()
-                        
+
                         # Carica i settori e i simboli dal file CSV
-                        """with open("csv_files/nasdaq_symbols.csv", mode="r") as file:
+                        with open("csv_files/nasdaq_symbols.csv", mode="r") as file:
                             csv_reader = csv.DictReader(file)
                             symbols_data = {row["Symbol"]: row["Sector"] for row in csv_reader}
-                        """
 
                         # Eseguire una query all'inizio per ottenere tutti i simboli e i prezzi
-                        #cur.execute(f"SELECT symbol, close_price FROM nasdaq_actions WHERE time_value_it = '{date}';")
-                        #symbolsQ = cur.fetchall()  # Recupera i dati come lista di tuple
+                        cur.execute(f"SELECT symbol, close_price FROM nasdaq_actions WHERE time_value_it = '{date}';")
+                        symbolsQ = cur.fetchall()  # Recupera i dati come lista di tuple
 
                         # Converte symbolsQ in un dizionario per un accesso più veloce
-                        #symbolsQ_dict = {sy[0]: sy[1] for sy in symbolsQ}  # {symbol: price}
+                        symbolsQ_dict = {sy[0]: sy[1] for sy in symbolsQ}  # {symbol: price}
 
                         # Acquisto di azioni finché c'è budget
-                        while (budgetInvestimenti > 0) and (len(copyList) > 0):
-                            
-                            
+                        while budgetInvestimenti > 0:
+
                             # Scelgo un'azione random dal pool
-                            symbolRandom = random.randint(0, len(copyList) - 1)
-                            chosen_symbol = copyList[symbolRandom]
-                            
-                            cur.execute(f"SELECT close_price FROM nasdaq_actions WHERE time_value_it = '{date}' AND symbol='{chosen_symbol}';")
-                            price = cur.fetchone() # Recupera i dati come lista di tuple
-                            
+                            symbolRandom = random.randint(0, len(symbols) - 1)
+                            chosen_symbol = symbols[symbolRandom]
+
                             # Verifica se il simbolo è in un settore accettato e se è presente nelle query SQL
                             if chosen_symbol in symbols_data and symbols_data[chosen_symbol] in sectors:
-                                #if chosen_symbol in symbolsQ_dict:
-                                    #price = symbolsQ_dict[chosen_symbol]
+                                if chosen_symbol in symbolsQ_dict:
+                                    price = symbolsQ_dict[chosen_symbol]
                                     
-                                middlePrice = getValueMiddlePrice(chosen_symbol, date, cur)
-                                
-                                price = price[0]
+                                    middlePrice = getValueMiddlePrice(chosen_symbol, date, cur)
                                     
-                                if price < middlePrice*(1-(SA/100)):
+                                    if price < middlePrice*(1-(SA/100)):
                                         # Calcolo volume e aggiornamento budget
-                                    volume = float(math.floor(1000 / price))
-                                    ticketPuc += 1
-                                    dateObject = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+                                        volume = float(math.floor(1000 / price))
+                                        ticketPuc += 1
+                                        dateObject = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
 
                                         # Inserimento nel database
-                                    insertDataDB.insertInPurchase(dateObject, ticketPuc, volume, chosen_symbol, price, cur, conn)
-                                    budgetInvestimenti -= (price * volume)
+                                        insertDataDB.insertInPurchase(dateObject, ticketPuc, volume, chosen_symbol, price, cur, conn)
+                                        budgetInvestimenti -= (price * volume)
 
                                         # Aggiornamento stato
-                                    insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+                                        insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
-                                    copyList.remove(chosen_symbol)
-                                        
                                         # Logging dell'acquisto
-                                    if logging.getLogger().isEnabledFor(logging.INFO):
-                                        logging.info(f"Acquistata azione {chosen_symbol}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}")
+                                        if logging.getLogger().isEnabledFor(logging.INFO):
+                                            logging.info(f"Acquistata azione {chosen_symbol}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}")
+                                    
+                                    else:
+                                        if logging.getLogger().isEnabledFor(logging.INFO):
+                                            logging.info(f"Prezzo {price} non inferiore al prezzo medio {middlePrice*(1-(SA/100))} per {chosen_symbol} alla data {date}.")
+
                                     
                                 else:
                                     if logging.getLogger().isEnabledFor(logging.INFO):
-                                        logging.info(f"Prezzo {price} non inferiore al prezzo medio {middlePrice*(1-(SA/100))} per {chosen_symbol} alla data {date}.")
-                                        
-                                    copyList.remove(chosen_symbol)
-
-                                    
-                                """else:
-                                    if logging.getLogger().isEnabledFor(logging.INFO):
                                         logging.info(f"Simbolo {chosen_symbol} non trovato nella data specificata.")
-                                    copyList.remove(chosen_symbol)"""
                             else:
                                 if logging.getLogger().isEnabledFor(logging.INFO):
                                     logging.info(f"Settore di appartenenza per {chosen_symbol} non valido o non trovato.")
-                                copyList.remove(chosen_symbol)
 
                             logging.info(f"Cambio di stato da PURCHASE a WAIT\n\n")
                         
@@ -285,7 +271,7 @@ def main(sectors):
             print(f"Profitto: {profit}\n\n")
             
             # Inizializzazione in caso di primo utilizzo
-            budget = budgetInvestimenti = initial_budget = 10000
+            budget = budgetInvestimenti = initial_budget = 50000
             equity = margin = 0
             budgetMantenimento = 0
             profitTotalUSD = profitTotalPerc = 0
