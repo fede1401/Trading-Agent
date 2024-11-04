@@ -96,7 +96,7 @@ def insertInPurchase (date, ticket, volume, symbol, price, cur, conn):
         # Conferma la transazione e stampa un messaggio
         conn.commit()
             
-        print("Dati relative all'acquisto dell'azione salvati nel db.\n")
+        #print("Dati relative all'acquisto dell'azione salvati nel db.\n")
         
 
 
@@ -129,7 +129,7 @@ def insertInSale (date, ticket_pur, ticket_sale, volume, symbol, priceSale, pric
         # Conferma la transazione e stampa un messaggio
         conn.commit()
             
-        print("Dati relativi alla vendita dell'azione salvati nel db.\n")
+        #print("Dati relativi alla vendita dell'azione salvati nel db.\n")
         
 
 # Funzione per inserire dati relativi allo stato del trader nel database
@@ -214,3 +214,55 @@ def insertInSector(nome, cur, conn):
         conn.commit()
             
         print("Dati relativi al  salvati nel db.\n")
+
+
+
+def insertInTesting(id, agent, numberTest, initial_date, end_date, profit ,cur, conn):
+    if cur is not None and conn is not None:
+        #print("\nConnessione al database nasdaq avvenuta con successo.\n")
+        
+        try:
+            # Esegue l'inserimento nella tabella loginDate
+            cur.execute(
+                "INSERT INTO Testing (id, agent, numberTest, initial_date, end_date, profit) "
+                "VALUES (%s, %s, %s, %s, %s, %s ) ",
+                (
+                    convert_numpy_to_python(id),
+                    agent, 
+                    convert_numpy_to_python(numberTest),
+                    initial_date, end_date,
+                    convert_numpy_to_python(profit)
+                )
+            )
+        except Exception as e:
+            print("Errore durante l'inserimento dei dati: ", e)
+        
+        # Conferma la transazione e stampa un messaggio
+        conn.commit()
+            
+        #print("Dati relativi al  salvati nel db.\n")
+
+
+
+def insertInMiddleProfit(testId, agent, middleProfit,cur, conn):
+    if cur is not None and conn is not None:
+        #print("\nConnessione al database nasdaq avvenuta con successo.\n")
+        
+        try:
+            # Esegue l'inserimento nella tabella loginDate
+            cur.execute(
+                "INSERT INTO MiddleProfit (testId, agent, middleProfit) "
+                "VALUES (%s, %s, %s ) ",
+                (
+                    convert_numpy_to_python(testId),
+                    agent, 
+                    convert_numpy_to_python(middleProfit)
+                )
+            )
+        except Exception as e:
+            print("Errore durante l'inserimento dei dati: ", e)
+        
+        # Conferma la transazione e stampa un messaggio
+        conn.commit()
+            
+        #print("Dati relativi al  salvati nel db.\n")

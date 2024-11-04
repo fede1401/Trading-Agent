@@ -14,6 +14,7 @@ import pytz
 from datetime import datetime, time, timedelta
 import time as time_module
 
+# funzione come valutatore e non come main
 
 
 def main():

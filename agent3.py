@@ -17,6 +17,26 @@ import traceback
 SA = 1
 SV = 2
 
+def getRandomDate(cursor):
+    # Seleziona un giorno casuale all'interno del range temporale che sia più piccolo di 365 giorni rispetto alla data massima presente nel database
+    cursor.execute("SELECT MAX(time_value_it) - INTERVAL '1 year' FROM nasdaq_actions;")
+    max_date = cursor.fetchone()[0]
+                
+    cursor.execute("SELECT time_value_it FROM nasdaq_actions WHERE time_value_it < %s ORDER BY RANDOM() LIMIT 1;", (max_date,))
+    trade_date = cursor.fetchone()[0]    
+    trade_date = trade_date.strftime('%Y-%m-%d %H:%M:%S')
+                
+    # Converti la stringa in un oggetto datetime
+    initial_date = datetime.strptime(trade_date, '%Y-%m-%d %H:%M:%S')
+
+    # Aggiungi 1 anno usando relativedelta
+    end_date = initial_date + relativedelta(years=1)
+    # Converti end_date in una stringa formattata
+    end_date = end_date.strftime('%Y-%m-%d %H:%M:%S')
+    
+    return trade_date, initial_date, end_date
+    
+
 
 def main(sectors):
     # configurazione del logging
@@ -53,29 +73,9 @@ def main(sectors):
             csv_reader = csv.DictReader(file)
             symbols_data = {row["Symbol"]: row["Sector"] for row in csv_reader}
 
-        for i in range(100):
+        for _ in range(100):
             
-            # Seleziona un giorno casuale all'interno del range temporale che sia piu´ piccolo di 365 giorni rispetto alla data massima presente nel database
-            cur.execute("SELECT MAX(time_value_it) FROM nasdaq_actions;")
-            max_date = cur.fetchone()[0]
-                
-            max_date = max_date - timedelta(days=365)
-                
-            cur.execute("SELECT time_value_it FROM nasdaq_actions WHERE time_value_it < %s ORDER BY RANDOM() LIMIT 1;", (max_date,))
-            date = cur.fetchone()[0]
-            
-            date = date.strftime('%Y-%m-%d %H:%M:%S')
-                
-            initialDate = date
-                    
-            # Converti la stringa in un oggetto datetime
-            initialDate = datetime.strptime(initialDate, '%Y-%m-%d %H:%M:%S')
-
-            # Aggiungi 1 anno usando relativedelta
-            endDate = initialDate + relativedelta(years=1)
-
-            # Converti endDate in una stringa formattata
-            endDate = endDate.strftime('%Y-%m-%d %H:%M:%S')
+            trade_date, initial_date, endDate = getRandomDate(cur)
                         
             # Inizializzazione in caso di primo utilizzo
             budget = budgetInvestimenti = initial_budget = 10000
@@ -93,7 +93,7 @@ def main(sectors):
                     
             logging.info(f"Budget iniziale: {budget}\n")
             stateAgent = agentState.AgentState.SALE
-                    
+            #prezzo alto         
               
             # Il ciclo principale esegue le operazioni di trading
             while True:

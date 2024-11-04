@@ -75,3 +75,22 @@ CREATE TABLE IF NOT EXISTS Sector (
     nome VARCHAR (50) NOT NULL,
     PRIMARY KEY(nome)
 );
+
+
+CREATE TABLE IF NOT EXISTS Testing (
+    id INTEGER NOT NULL,
+    agent VARCHAR (50) NOT NULL,
+    numberTest INTEGER,
+    initial_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL,
+    profit DOUBLE PRECISION NOT NULL,
+);
+
+
+CREATE TABLE IF NOT EXISTS MiddleProfit (
+    testId INTEGER NOT NULL,
+    agent VARCHAR (50) NOT NULL,
+    middleProfit DOUBLE PRECISION NOT NULL
+    -- FOREIGN KEY (testId) REFERENCES Testing(id)
+);
+
