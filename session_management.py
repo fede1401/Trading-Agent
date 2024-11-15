@@ -1,6 +1,6 @@
-import MetaTrader5 as mt5
 from datetime import datetime
-import insertDataDB
+import db.insertDataDB as insertDataDB
+import MetaTrader5 as mt5
 
 
 ############ variabili locali programma ###################
@@ -45,8 +45,8 @@ def login_metaTrader5(account, password, server):
             account_info = mt5.account_info()
             
             # Scrive le informazioni dell'account su un file
-            with open('fileTXT\\info_account.txt', 'w') as file:
-                file.write(str(account_info))
+            #with open('fileTXT\\info_account.txt', 'w') as file:
+            #    file.write(str(account_info))
 
             # Stampa le informazioni dell'account
             print(account_info)

@@ -1,9 +1,10 @@
-import MetaTrader5 as mt5
 from datetime import datetime
 import session_management, info_order_send
 import psycopg2
 import time
 import random
+import MetaTrader5 as mt5
+
 
 
 def get_account_info():
