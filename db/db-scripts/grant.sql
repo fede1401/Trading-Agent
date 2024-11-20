@@ -8,6 +8,8 @@ GRANT ALL PRIVILEGES ON DATABASE :dbname to :username ;
 
 
 ALTER TABLE nasdaq_actions OWNER TO :username ;
+ALTER TABLE nyse_actions OWNER TO :username ;
+ALTER TABLE larg_comp_eu_actions OWNER TO :username
 ALTER TABLE Purchase OWNER TO :username;
 ALTER TABLE Sale OWNER TO :username;
 ALTER TABLE DataTrader OWNER TO :username;

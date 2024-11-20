@@ -29,6 +29,37 @@ CREATE TABLE IF NOT EXISTS nasdaq_actions (
 );
 
 
+CREATE TABLE IF NOT EXISTS nyse_actions (
+    symbol VARCHAR (50) NOT NULL,
+    time_frame VARCHAR (50) NOT NULL,
+    time_value_IT TIMESTAMP NOT NULL,		      -- time of reading YYYY-MM-DD hh-mm-ss
+    time_value_NY TIMESTAMP NOT NULL,              -- time of reading YYYY-MM-DD hh-mm-ss
+    open_price DOUBLE PRECISION,
+    high_price DOUBLE PRECISION,
+    low_price DOUBLE PRECISION,
+    close_price DOUBLE PRECISION,
+    tick_volume BIGINT,
+    spread INTEGER, 
+    real_volume BIGINT,
+    PRIMARY KEY(symbol, time_value_IT, time_value_NY, time_frame)
+);
+
+CREATE TABLE IF NOT EXISTS larg_comp_eu_actions (
+    symbol VARCHAR (50) NOT NULL,
+    time_frame VARCHAR (50) NOT NULL,
+    time_value_IT TIMESTAMP NOT NULL,		      -- time of reading YYYY-MM-DD hh-mm-ss
+    time_value_NY TIMESTAMP NOT NULL,              -- time of reading YYYY-MM-DD hh-mm-ss
+    open_price DOUBLE PRECISION,
+    high_price DOUBLE PRECISION,
+    low_price DOUBLE PRECISION,
+    close_price DOUBLE PRECISION,
+    tick_volume BIGINT,
+    spread INTEGER, 
+    real_volume BIGINT,
+    PRIMARY KEY(symbol, time_value_IT, time_value_NY, time_frame)
+);
+
+
 CREATE TABLE IF NOT EXISTS  Purchase (
     datePur TIMESTAMP NOT NULL,
     now TIMESTAMP NOT NULL,
@@ -88,6 +119,8 @@ CREATE TABLE IF NOT EXISTS Testing (
     initial_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
     profit DOUBLE PRECISION NOT NULL,
+    market VARCHAR (50) NOT NULL,
+    notes VARCHAR (100)
 );
 
 

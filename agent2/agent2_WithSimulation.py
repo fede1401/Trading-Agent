@@ -30,7 +30,8 @@ def main(sectorSymbols, sectors):
     
     #logging.disable(logging.CRITICAL)
     
-    symbols = getSymbols.getSymbolsTotal()
+    ##symbols = getSymbols.getSymbolsTotal()
+    symbols = getSymbols.getSymbolsCapDesc()  
         
     try:
         # Connessione al database
@@ -47,42 +48,13 @@ def main(sectorSymbols, sectors):
 
         # Ciclo principale
         for i in range(100):
-            
             clearSomeTablesDB(cur, conn)
             
             trade_date, initial_date, endDate = getRandomDate(cur)
             #trade_date = '2008-11-25 00:00:00'   |   initial_date = '2008-11-25 00:00:00'   |   endDate = '2009-11-25 00:00:00' --> per test specifici
             
-            # Inizializzazione ad ogni iterazione
-            #budget = 
-            budgetInvestimenti = initial_budget = 1000
-            #equity = margin = 0
-            budgetMantenimento = 0
-            profitTotalUSD = profitTotalPerc = profitNotReinvested = profitNotReinvestedPerc = 0
-            ticketPur = ticketSale = 0
-            
-            with open("purchase_agent2.txt", "a") as f:
-                f.write("Iterazione %s:\n" % str(i))
-            
-            with open("sale_agent2.txt", "a") as f:
-                f.write("Iterazione %s:\n" % str(i))
-                        
-            # Inserimento dei dati iniziali dell'agente nel database
-            stateAgent = agentState.AgentState.INITIAL
-            
-            # Inserimento dei dati iniziali dell'agente nel database
-            insertDataDB.insertInDataTrader(trade_date, stateAgent, initial_budget, 1000, 0, 0, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-                
-            #logging.info(f"Budget iniziale: {budget}\n")
-            stateAgent = agentState.AgentState.SALE
-            
-            # Recupero dei simboli azionari disponibili per le date di trading scelte. 
-            cur.execute(f"SELECT distinct symbol FROM nasdaq_actions WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
-            resSymbolDisp = cur.fetchall()
-            symbolDisp = [sy[0] for sy in resSymbolDisp if sy[0] in symbols]
-            
             # trading per 1 anno
-            profitto1Y = tradingYear(stateAgent, trade_date, initial_date, endDate, 1000, cur, conn, ticketPur, ticketSale, initial_budget, 0, 0, budgetInvestimenti, budgetMantenimento, profitTotalUSD, profitTotalPerc, sectorSymbols, symbolDisp, sectors, profitNotReinvested , profitNotReinvestedPerc)
+            profitto1Y = tradingYear(cur, conn, symbols, sectorSymbols, sectors, trade_date, initial_date, endDate)
               
             # Inserimento dei dati relativi al profitto dell'agente nel database
             insertDataDB.insertInTesting(idTest, "agent2", i, initial_date=initial_date, end_date=endDate, profit=profitto1Y, cur=cur, conn=conn)
@@ -93,7 +65,6 @@ def main(sectorSymbols, sectors):
             
             # Metti in pausa il programma per il tempo specificato
             #time_module.sleep(600)
-        
         
         # Calcolo del profitto medio relativo a tutte le iterazioni
         profittoMedio = sum(profTot) / len(profTot)
@@ -115,7 +86,34 @@ def main(sectorSymbols, sectors):
 
 
 
-def tradingYear(stateAgent, trade_date, initial_date, endDate, budget, cur, conn, ticketPur, ticketSale, initial_budget, equity, margin, budgetInvestimenti, budgetMantenimento, profitTotalUSD, profitTotalPerc, sectorSymbols, symbolDisp, sectors, profitNotReinvested , profitNotReinvestedPerc):
+def tradingYear(cur, conn, symbols, sectorSymbols, sectors, trade_date, initial_date, endDate):    
+    # Inizializzazione ad ogni iterazione
+    budget = budgetInvestimenti = initial_budget = 1000
+    equity = margin = 0
+    budgetMantenimento = 0
+    profitTotalUSD = profitTotalPerc = profitNotReinvested = profitNotReinvestedPerc = 0
+    ticketPur = ticketSale = 0
+            
+    with open("purchase_agent2.txt", "a") as f:
+        f.write("Iterazione %s:\n" % str(i))
+            
+    with open("sale_agent2.txt", "a") as f:
+        f.write("Iterazione %s:\n" % str(i))
+                        
+    # Inserimento dei dati iniziali dell'agente nel database
+    stateAgent = agentState.AgentState.INITIAL
+            
+    # Inserimento dei dati iniziali dell'agente nel database
+    insertDataDB.insertInDataTrader(trade_date, stateAgent, initial_budget, 1000, 0, 0, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+                
+    #logging.info(f"Budget iniziale: {budget}\n")
+    stateAgent = agentState.AgentState.SALE
+            
+    # Recupero dei simboli azionari disponibili per le date di trading scelte. 
+    cur.execute(f"SELECT distinct symbol FROM nasdaq_actions WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
+    resSymbolDisp = cur.fetchall()
+    symbolDisp = [sy[0] for sy in resSymbolDisp if sy[0] in symbols]
+    
     # Il ciclo principale esegue le operazioni di trading per 1 anno
     while True:
 
@@ -233,7 +231,7 @@ def tradingYear(stateAgent, trade_date, initial_date, endDate, budget, cur, conn
                         
                         # Calcolo volume e aggiornamento budget
                         #volumeAcq = float(math.floor(10 / price))
-                        volumeAcq = float(100 / price)
+                        volumeAcq = float(10 / price)
                         if volumeAcq == 0:
                             continue
                         ticketPur += 1
