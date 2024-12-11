@@ -372,19 +372,21 @@ def insertInTesting(id, agent, numberTest, initial_date, end_date, profit, marke
 ################################################################################################################################################################################################
 
 
-def insertInMiddleProfit(testId, agent, middleProfit,cur, conn):
+def insertInMiddleProfit(testId, agent, middleProfit, notes, devst, cur, conn):
     if cur is not None and conn is not None:
         #print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella loginDate
             cur.execute(
-                "INSERT INTO MiddleProfit (testId, agent, middleProfit) "
-                "VALUES (%s, %s, %s ) ",
+                "INSERT INTO MiddleProfit (testId, agent, notes, middleProfit, devstandard) "
+                "VALUES (%s, %s, %s, %s, %s) ",
                 (
                     convert_numpy_to_python(testId),
                     agent, 
-                    convert_numpy_to_python(middleProfit)
+                    notes,
+                    convert_numpy_to_python(middleProfit),
+                    convert_numpy_to_python(devst)
                 )
             )
         except Exception as e:

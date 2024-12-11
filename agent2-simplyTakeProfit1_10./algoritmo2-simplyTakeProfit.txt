@@ -1,0 +1,73 @@
+main:
+    # connect db;
+    
+    # for market in ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']:
+        
+        # take symbols for market 
+
+        # gest last id on database for simulation
+
+        # cycle 10 times for variation of parameter TAKE PROFIT (1#10%)
+
+            # defined TAKE PROFIT
+
+            # generate 100 randomic dates 
+
+            # cycle 100 times for simulation about one market and variation of parameter (TK) with one randomic date
+
+                # clear table database in order to calculate profits and other variables each time
+
+                # trading one year and get profit
+
+                # insert profit in db
+            
+            # end cycle
+        
+        # end cycle
+    
+    # end for
+
+    # close connection database
+
+end main
+
+
+---------------------------------------------------------------------------------------------------------
+
+
+funzione `tradingYear`:
+   # Define initial budgets: `budget`, `budgetInvestimenti`, `budgetMantenimento`, etc.
+   # Insert the agent's initial state into the database.
+
+   # extract all tradable symbols for the specified market and time range (`initial_date` → `endDate`).
+
+   # cycle that continues until the current trading date (`trade_date`) reaches `endDate`.
+
+        State: SALE
+        # Identify purchased symbols that have not yet been sold.
+        # For each symbol, calculate the profit if the current price exceeds the purchase price.
+        # If the profit exceeds `TK` (take profit threshold), sell:
+            # Update budgets (`budgetInvestimenti`, `budgetMantenimento`).
+            # Log the sale in the database.
+            # Update total profits and the agent's state in the database.
+        # Transition to the `PURCHASE` state.
+
+        State: PURCHASE
+        # Buy stocks randomly until the `budgetInvestimenti` is exhausted:
+            # Select a random symbol from the available pool.
+            # Fetch the opening price for the current date.
+            # If valid, calculate the volume to purchase and log the purchase in the database.
+            # Update the `budgetInvestimenti`.
+        # Transition to the `SALE_IMMEDIATE` state.
+
+        State: SALE_IMMEDIATE
+        # Immediately sell purchased symbols if the current price exceeds the purchase price with a positive profit.
+        # Update budgets, total profits, and log the sale in the database.
+        # Transition to the `WAIT` state.
+
+        State: WAIT
+        # Calculate the next available trading date.
+        # If the next date exceeds `endDate`, exit the loop.
+        # Transition to the `SALE` state.
+
+# Return the total non#reinvested profit as a percentage (`profitNotReinvestedPerc`).

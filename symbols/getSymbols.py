@@ -98,8 +98,7 @@ def getSymbolsNasda100():
             'TSCO', 'CDW', 'FSLR', 'TTWO', 'EBAY', 'ICLR', 'MSTR', 'TROW', 'WDC', 'DLTR', 
             'STX', 'BNTX', 'LPLA', 'PTC', 'SBAC', 'ENTG', 'HOOD', 'DKNG', 'LI', 'ALGN', 
             'VRSN', 'ILMN', 'ENPH', 'SWKS', 'EXPE', 'MDB', 'UAL', 'WMG', 'BMRN', 'LOGI', 
-            'NWSA', 'OKTA', 'FOX', 'MANH', 'CG', 'INCY', 'NTRA', 'NBIX', 'AKAM', 'TRMB', 
-            'NTNX', 'POOL', 'IBKR', 'LNT', 'FLEX', 'MEDP', 'WING', 'SAIA', 'GLPI', 'SRPT']
+            'NWSA', 'OKTA', 'FOX', 'MANH', 'CG', 'INCY', 'NTRA', 'NBIX', 'AKAM', 'TRMB']
     
 
 def getSymbolsNyse100():
