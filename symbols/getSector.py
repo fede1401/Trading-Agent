@@ -32,10 +32,10 @@ def getSectorSymbols():
     diz = dict()
 
     # Leggi il file CSV in un DataFrame
-    df = pd.read_csv('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols/csv_files/nasdaq_symbols.csv')
+    df = pd.read_csv('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols.csv')
 
     # Apri il file CSV in modalità lettura
-    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols/csv_files/nasdaq_symbols.csv', mode='r') as file:
+    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols.csv', mode='r') as file:
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
 

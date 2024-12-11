@@ -127,9 +127,9 @@ CREATE TABLE IF NOT EXISTS Testing (
 CREATE TABLE IF NOT EXISTS MiddleProfit (
     testId INTEGER NOT NULL,
     agent VARCHAR (50) NOT NULL,
-    notes VARCHAR (1000),
     middleProfit DOUBLE PRECISION NOT NULL,
-    devstandard DOUBLE PRECISION NOT NULL
+    devstandard DOUBLE PRECISION NOT NULL,
+    notes VARCHAR (1000)
     -- FOREIGN KEY (testId) REFERENCES Testing(id)
 );
 

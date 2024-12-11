@@ -22,6 +22,7 @@ import math
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import traceback
+import numpy as np
 
 
 def main():
@@ -29,21 +30,18 @@ def main():
     logging.basicConfig( level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s" )
     
     #logging.disable(logging.CRITICAL)
-    
-    #symbols = getSymbols.getSymbolsTotal()
-        
+            
     try:
-        # Connessione al database
-        cur, conn = connectDB.connect_nasdaq()
-
-        # Inserimento dei dati relativi al login nel database
-        insertDataDB.insertInLoginDate("Federico Ferdinandi", "federico", "TickmillEU-Demo", cur, conn )
         
-        profTot = []
+        cur, conn = connectDB.connect_nasdaq()                                                                  # connessione al database           
+       
+        insertDataDB.insertInLoginDate("Federico Ferdinandi", "federico", "TickmillEU-Demo", cur, conn )        # inserimento dei dati relativi al login nel database
         
-        datesToTrade = generate100RandomDates(cur)
+        profTot = []                                                                                            # lista che conterrà i profitti relativi a tutte le iterazioni
         
-        market = ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']
+        datesToTrade = generate100RandomDates(cur)                                                              # generazione di 100 date casuali per il trading
+        
+        market = ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']                                     # mercati su cui effettuare trading
         for m in market:
             if m == 'nasdaq_actions':
                 symbols = getSymbols.getSymbolsNasda100()
@@ -52,44 +50,34 @@ def main():
             elif m == 'larg_comp_eu_actions':
                 symbols = getSymbols.getSymbolsLargestCompEU100()
                 
-            
-             # get last idTest
-            idTest = getLastIdTest(cur)
+            idTest = getLastIdTest(cur)                                                                         # recupero dell'ultimo id del testing
             
             # Ciclo principale
             for i in range(100):
+                TK = 1/100                                                                                      # definizione take profit dell'1%: valore percentuale di profitto da raggiungere per vendere
                 
-                # Definiamo come costanti le soglie di acquisto e di vendita. La soglia di acquisto viene utilizzata per sapere quando acquistare un'azione, 
-                # mentre la soglia di vendita viene utilizzata per sapere quando vendere un'azione.
-                #SA = 1 # va impostata ad 1, altrimenti si creano problemi nello stato di compravendita, dato che non riesce a comprare nulla.
-                TK = 1/100
+                clearSomeTablesDB(cur, conn)                                                                    # pulizia di alcune tabelle del database per evitare conflitti nelle varie iterazioni del trading
                 
-                clearSomeTablesDB(cur, conn)
+                trade_date, initial_date, endDate = datesToTrade[i]                                             # recupero delle date di trading per l'iterazione i
+                #trade_date = '2008-11-25 00:00:00', initial_date = '2008-11-25 00:00:00', endDate = '2009-11-25 00:00:00'                    # per test specifici
                 
-                trade_date, initial_date, endDate = datesToTrade[i]
-                #trade_date = '2008-11-25 00:00:00'   |   initial_date = '2008-11-25 00:00:00'   |   endDate = '2009-11-25 00:00:00' --> per test specifici
+                profitto1Y = tradingYear(cur, conn, symbols, m, trade_date, initial_date, endDate, TK)          # trading per 1 anno in cui si calcola il profitto e si compra solamente se il prezzo medio del titolo è inferiore al prezzo attuale
                 
-                # trading per 1 anno
-                profitto1Y = tradingYear(cur, conn, symbols, m, trade_date, initial_date, endDate, TK)
+                profitto1Y = round(profitto1Y, 4)                                                               # arrotondamento del profitto a 4 cifre decimali       
                 
-                profitto1Y = round(profitto1Y, 4)
-                
-                # Inserimento dei dati relativi al profitto dell'agente nel database
-                insertDataDB.insertInTesting(idTest, "agent3", i, initial_date=initial_date, end_date=endDate, profit=profitto1Y, market=m, notes=f"TAKE PROFIT: {TK}%", cur=cur, conn=conn)
+                insertDataDB.insertInTesting(idTest, "agent3", i, initial_date=initial_date, end_date=endDate, profit=profitto1Y, market=m, notes=f"TAKE PROFIT: {TK}%", cur=cur, conn=conn) # inserimento dei dati relativi al testing nel database
                 
                 profTot.append(profitto1Y)
-                
-                #print(f"\n{i}:  {profitto1Y} with soglia acquisto: {SA} e soglia di vendita: {SV}\n\n")
-                
-                # Metti in pausa il programma per il tempo specificato
-                #time_module.sleep(600)
             
-            # Calcolo del profitto medio relativo a tutte le iterazioni
-            profittoMedio = sum(profTot) / len(profTot)
-            logging.info(f"Profitto medio: {profittoMedio}\n")
-            
-            insertDataDB.insertInMiddleProfit(idTest, f"agent3, TP:{TK}%, {m}, calc middle price ", profittoMedio, cur=cur, conn=conn)
+            # Calcolo del profitto medio
+            #profittoMedio = sum(profTot) / len(profTot)
+            mean_profit = float(np.mean(profTot))
+            std_deviation = float(np.std(profTot))
+            logging.info(f"Profitto medio: {mean_profit}, Deviazione standard: {std_deviation}")
 
+            notes = f"TP:{TK}%, {m}, buy no randomly"
+            insertDataDB.insertInMiddleProfit(idTest, "agent2" , middleProfit=mean_profit, devst=std_deviation, notes=notes, cur=cur, conn=conn)
+    
     except Exception as e:
         logging.critical(f"Errore non gestito: {e}")
         logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
@@ -158,14 +146,12 @@ def tradingYear(cur, conn, symbols, market, trade_date, initial_date, endDate, T
                     price_current = result[0]
 
                     # Se il prezzo corrente è maggiore del prezzo iniziale di acquisto c'è un qualche profitto
-                    if price_current > price_open:
-                        #logging.info( f"Price current: {price_current} maggiore del prezzo di apertura: {price_open}\n" )
+                    if price_current > price_open:   #logging.info( f"Price current: {price_current} maggiore del prezzo di apertura: {price_open}\n" )
 
                         # Calcolo del profitto:
                         profit = price_current - price_open
                         perc_profit = profit / price_open
 
-                        # Rivendita con SV come percentuale di profitto
                         if perc_profit > TP:
 
                             # aggiorno il budget
