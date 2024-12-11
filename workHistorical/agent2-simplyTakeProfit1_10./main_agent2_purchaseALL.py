@@ -22,24 +22,8 @@ from dateutil.relativedelta import relativedelta
 import pandas as pd
 import traceback
 import numpy as np
-import tkinter as tk
-from tkinter import ttk
 import time
 
-
-# Funzione per la barra di caricamento
-def update_progress_bar(progress_bar, status_label, percent_label, info_label, step, total_steps, estimated_time, current_profit, elapsed_time_total):
-    progress = (step / total_steps) * 100
-    progress_bar['value'] = progress
-    percent_label['text'] = f"{int(progress)}%"
-    remaining_time = int(estimated_time * (total_steps - step))
-    status_label['text'] = f"Passo {step}/{total_steps}, mancano {remaining_time} secondi, cioé {remaining_time / 60:.2f} minuti."
-    # Aggiornamento dei dati aggiuntivi
-    info_label['text'] = (
-        f"Profitto corrente: {current_profit:.2f} | "
-        f"Tempo totale trascorso: {elapsed_time_total:.2f}s"
-    )
-    app.update()  # Aggiorna la GUI
 
 
 # Funzione principale per il trading e il caricamento
@@ -56,28 +40,6 @@ def main():
         
         profTot = []
         datesToTrade = generate100RandomDates(cur)
-        
-        # Configura la GUI per la barra di progresso
-        global app
-        app = tk.Tk()
-        app.title("Barra di Caricamento")
-        app.geometry("400x200")
-
-        # Etichette e barra di caricamento
-        status_label = tk.Label(app, text="Preparazione...", font=("Arial", 12))
-        status_label.pack(pady=10)
-
-        progress_bar = ttk.Progressbar(app, orient="horizontal", length=300, mode="determinate")
-        progress_bar.pack(pady=10)
-
-        percent_label = tk.Label(app, text="0%", font=("Arial", 10))
-        percent_label.pack()
-        
-        # Etichetta per informazioni aggiuntive
-        info_label = tk.Label(app, text="Informazioni di elaborazione", font=("Arial", 10))
-        info_label.pack(pady=5)
-
-        app.update()
 
         # Inizio elaborazione per i diversi mercati
         market = ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']
@@ -92,29 +54,15 @@ def main():
             for i in range(1, 11):  # Per ogni valore di Take Profit (1%-10%)
                 TK = i / 100
                 idTest = getLastIdTest(cur)
-                
-                # Etichetta aggiuntiva per informazioni dinamiche
-                info_label = tk.Label(app, text="Informazioni di elaborazione", font=("Arial", 10))
-                info_label.pack(pady=5)
-
-                total_steps = 100  # Numero totale di iterazioni
-                start_time_total = datetime.now()
-
-                
+                                
                 total_steps = 100  # Numero di iterazioni principali
                 for step in range(total_steps):
-                    start_time = datetime.now()
 
                     # Logica principale
                     clearSomeTablesDB(cur, conn)
                     trade_date, initial_date, endDate = datesToTrade[step]
                     profitto1Y = tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, m, TK, initial_date, endDate)
-                    now_after = datetime.now()
-                    elapsed_time = (now_after - start_time).total_seconds()
                     
-                    # Calcolo tempo totale trascorso
-                    elapsed_time_total = (datetime.now() - start_time_total).total_seconds()
-
                     profitto1Y = round(profitto1Y, 4)
                     insertDataDB.insertInTesting(
                         idTest, "agent2", step, initial_date=initial_date,
@@ -123,12 +71,6 @@ def main():
                     )
                     profTot.append(profitto1Y)
                     
-                    # Calcolo tempo stimato rimanente
-                    elapsed_time = (now_after - start_time).total_seconds()
-
-                    # Aggiornamento della barra di progresso e delle informazioni
-                    update_progress_bar(progress_bar, status_label, percent_label, info_label, step + 1, total_steps, elapsed_time, profitto1Y, elapsed_time_total )
-
                 # Calcolo del profitto medio
                 #profittoMedio = sum(profTot) / len(profTot)
                 mean_profit = float(np.mean(profTot))
@@ -137,12 +79,6 @@ def main():
 
                 notes = f"TP:{TK}%, {m}, buy no randomly"
                 insertDataDB.insertInMiddleProfit(idTest, "agent2" , middleProfit=mean_profit, devst=std_deviation, notes=notes, cur=cur, conn=conn)
-
-        # Aggiorna stato della barra di caricamento
-        status_label['text'] = "Elaborazione completata!"
-        percent_label['text'] = "100%"
-        progress_bar['value'] = 100
-        app.update()
 
     except Exception as e:
         logging.critical(f"Errore non gestito: {e}")
@@ -153,7 +89,6 @@ def main():
         cur.close()
         conn.close()
         logging.shutdown()
-        app.destroy()  # Chiudi la finestra della barra di caricamento
 
 
 
