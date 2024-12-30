@@ -142,7 +142,7 @@ def generateiRandomDates(cursor, i):
 
 def getRandomDate2(cursor):
     # Data massima e minima
-    max_date = datetime(2024, 11, 28, 0, 0, 0)
+    max_date = datetime(2023, 11, 20, 0, 0, 0)
     min_date = datetime(1990, 1, 1, 0, 0, 0)
 
     # Calcola l'intervallo in giorni
