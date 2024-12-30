@@ -67,21 +67,21 @@ Il codice scarica dati di borsa per una lista di titoli specifici (NASDAQ, NYSE,
 
 def downloadANDSaveStocksData(cur, conn, market):
     if market == 'NASDAQ':
-        symbols = getSymbols.getSymbolsNasda100()
+        symbols = getSymbols.getSymbolsNasdaq(400)
         #data_dir = Path('./marketData') # ---> ./ per debug
-        data_dir = Path('../marketData/NASDAQ') # ---> ./ per esecuzione da terminale in path '/agent1'
+        data_dir = Path('../../marketData/NASDAQ') # ---> ./ per esecuzione da terminale in path '/agent1'
         data_dir.mkdir(exist_ok=True)
         
     elif market == 'NYSE':
-        symbols = getSymbols.getSymbolsNyse100()
+        symbols = getSymbols.getSymbolsNyse(400)
         #data_dir = Path('./marketData/NYSE') # ---> ./ per debug
-        data_dir = Path('../marketData/NYSE') # ---> ./ per esecuzione da terminale in path '/agent1'
+        data_dir = Path('../../marketData/NYSE') # ---> ./ per esecuzione da terminale in path '/agent1'
         data_dir.mkdir(exist_ok=True)
         
     elif market == 'LARG_COMP_EU':
-        symbols = getSymbols.getSymbolsLargestCompEU100()
+        symbols = getSymbols.getSymbolsLargestCompEU(400)
         #data_dir = Path('./marketData/LARG_COMP_EU') # ---> ./ per debug
-        data_dir = Path('../marketData/LARG_COMP_EU') # ---> ./ per esec
+        data_dir = Path('../../marketData/LARG_COMP_EU') # ---> ./ per esec
         data_dir.mkdir(exist_ok=True)
     
     for titol in symbols:
@@ -91,6 +91,7 @@ def downloadANDSaveStocksData(cur, conn, market):
             
             df = pd.read_csv(file_path, header=None)
             ultima_riga = df.iloc[-1].tolist()
+            print(f"Ultima riga {ultima_riga}")
             if ultima_riga[0] == 'Date':
                 print(f'{titol} withoud stock data')
                 start_date = None
@@ -99,9 +100,12 @@ def downloadANDSaveStocksData(cur, conn, market):
             # Verifica se la data è più vecchia di 1 giorno
             x = (datetime.now() - timedelta(days=1))
             y = datetime.now()
-            last_date = datetime.strptime(ultima_riga[0].split('+')[0], '%Y-%m-%d %H:%M:%S')
+            #last_date = datetime.strptime(ultima_riga[0].split('+')[0], '%Y-%m-%d %H:%M:%S')
+            last_date = datetime.strptime(ultima_riga[0], '%Y-%m-%d')
             x = x.replace(hour=0, minute=0, second=0, microsecond=0)
             y = y.replace(hour=0, minute=0, second=0, microsecond=0)
+            x = x.strftime('%Y-%m-%d')
+            y = y.strftime('%Y-%m-%d')
 
             if last_date == x or last_date == y:
                 # Scarica nuovamente i dati
@@ -117,14 +121,17 @@ def downloadANDSaveStocksData(cur, conn, market):
         try:
             if start_date:
                 data = yf.download(titol, start=start_date.strftime('%Y-%m-%d'), interval='1d')
-                data.to_csv(file_path, mode='a', header=None)
+                data.to_csv(file_path, mode='a')
+                #data.to_csv(file_path, mode='a', header=None)
+                print(f"---------------")
                 fillDB(str(file_path), cur, conn, market=market)
                 print(f"Data for {titol} savely successfully in DB.")
             
             else:
                 data = yf.download(titol, period="max", interval='1d')
                 if not data.empty:
-                    data.to_csv(file_path, mode='w', header=None)
+                    data.to_csv(file_path, mode='w')
+                    #sdata.to_csv(file_path, mode='w', header=None)
                     fillDB(str(file_path), cur, conn, market=market)
                     logging.info(f"Data for {titol} updated successfully in DB.")
         
@@ -142,17 +149,20 @@ def fillDB(filename, cur, conn, market):
                 # Print each line
                 infoF = line.split(',')
                 if infoF[0] != 'Date' and infoF[0] != 'Ticker' and infoF[0] != 'Price':
-                    symbol = filename.split('/')[3]
+                    symbol = filename.split('/')[4]
+                    #symbol = filename.split('/')[0]
                     print(symbol)
                     symbol = symbol.split('.')[0]
                     print(symbol)
+                    # price 0, close 1, high 2, low 3, open 4, volume 5
                     time_value_it = time_value_ny = infoF[0]
-                    close_price = infoF[2]
-                    open_price = infoF[5]
-                    high_price = infoF[3]
-                    low_price = infoF[4]
+                    close_price = infoF[1]
+                    open_price = infoF[4]
+                    high_price = infoF[2]
+                    low_price = infoF[3]
                     time_frame = '1d'
-                    rate = [open_price, high_price, low_price, close_price, 0, 0, 0, time_value_it[0:len(time_value_it)-6], time_value_ny[0:len(time_value_it)-6]]
+                    #rate = [open_price, high_price, low_price, close_price, 0, 0, 0, time_value_it[0:len(time_value_it)-6], time_value_ny[0:len(time_value_it)-6]]
+                    rate = [open_price, high_price, low_price, close_price, 0, 0, 0, time_value_it, time_value_ny]
                     print(symbol, rate, '\n')
                     
                     if market == 'NASDAQ':
@@ -180,9 +190,9 @@ def main():
         # download dati
         #downloadANDSaveStocksDataYahooFinanceNASDAQ(cur, conn)
         market = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
-        #for m in market:
-        #    downloadANDSaveStocksData(cur, conn, m)
-        downloadANDSaveStocksData(cur, conn, 'NASDAQ')
+        for m in market:
+            downloadANDSaveStocksData(cur, conn, m)
+        #downloadANDSaveStocksData(cur, conn, 'NASDAQ')
     
     except Exception as e:
         logging.critical(f"Uncaught exception: {e}")

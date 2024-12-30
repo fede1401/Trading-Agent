@@ -71,7 +71,109 @@ def getSectorSymbols():
     return diz, sectorsDB
 
 
-if __name__ == "__main__":
-    getSectorSymbols()
+
+
+def getSectorNasdaq():
+    # Connessione al database
+    cur, conn = connectDB.connect_nasdaq()
     
+    # Dizionario per memorizzare i simboli e il settore di appartenenza
+    diz = dict()
+    
+    # Leggi il file CSV in un DataFrame
+    #df = pd.read_csv('../marketData/csv_files/nasdaq_symbols_sorted.csv')
+
+    # Apri il file CSV in modalità lettura
+    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols.csv', mode='r') as file:
+        # Crea un lettore CSV con DictReader
+        csv_reader = csv.DictReader(file)
+
+        # Aggiungi i simboli accettati e il settore di appartenenza al dizionario
+        for col in csv_reader:
+            diz[col['Symbol']] = col['Sector']
+
+    # Ottieni le chiavi del dizionario (i simboli)
+    key_diz = list(diz.keys())
+
+    print(diz.keys())
+    
+    cur.execute("SELECT * FROM sectorNasdaq;")
+    sectorsDB = [ sec[0] for sec in cur.fetchall() ]  # Estrai solo il primo elemento di ogni tupla
+    
+    settori = list(set(diz.values()))
+                
+    for sett in settori:
+        if sett != '':
+            if sett not in sectorsDB:
+                insertDataDB.insertInSector(str(sett), cur, conn)
+    print(settori)
+
+    print(len(key_diz))
+    
+    cur.close()
+    conn.close()
+    
+    print(diz)
+
+    # Ritorna il dizionario con i simboli e il settore di appartenenza
+    return diz, sectorsDB
+    
+
+
+def getSectorNyse():
+    # Connessione al database
+    cur, conn = connectDB.connect_nasdaq()
+    
+    # Dizionario per memorizzare i simboli e il settore di appartenenza
+    diz = dict()
+    
+    # Leggi il file CSV in un DataFrame
+    #df = pd.read_csv('../marketData/csv_files/nasdaq_symbols_sorted.csv')
+
+    # Apri il file CSV in modalità lettura
+    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nyse_symbols.csv', mode='r') as file:
+        # Crea un lettore CSV con DictReader
+        csv_reader = csv.DictReader(file)
+
+        # Aggiungi i simboli accettati e il settore di appartenenza al dizionario
+        for col in csv_reader:
+            diz[col['Symbol']] = col['Sector']
+
+    # Ottieni le chiavi del dizionario (i simboli)
+    key_diz = list(diz.keys())
+
+    print(diz.keys())
+    
+    cur.execute("SELECT * FROM sectorNyse;")
+    sectorsDB = [ sec[0] for sec in cur.fetchall() ]  # Estrai solo il primo elemento di ogni tupla
+    
+    settori = list(set(diz.values()))
+                
+    for sett in settori:
+        if sett != '':
+            if sett not in sectorsDB:
+                insertDataDB.insertInSectorNyse(str(sett), cur, conn)
+    print(settori)
+
+    print(len(key_diz))
+    
+    cur.close()
+    conn.close()
+    
+    print(diz)
+
+    # Ritorna il dizionario con i simboli e il settore di appartenenza
+    return diz, sectorsDB
+    
+
+
+
+
+
+
+
+if __name__ == "__main__":
+    #getSectorSymbols()
+    getSectorNasdaq()
+    getSectorNyse()
     

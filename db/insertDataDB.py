@@ -72,8 +72,8 @@ def insertInNasdaqFromYahoo(symbol, time_frame, rate, cur, conn):
                 (
                     symbol,
                     time_frame,
-                    datetime.strptime(rate[7], '%Y-%m-%d %H:%M:%S'),
-                    datetime.strptime(rate[8], '%Y-%m-%d %H:%M:%S'),
+                    datetime.strptime(rate[7], '%Y-%m-%d'),
+                    datetime.strptime(rate[8], '%Y-%m-%d'),
                     convert_numpy_to_python(rate[0]),
                     convert_numpy_to_python(rate[1]),
                     convert_numpy_to_python(rate[2]),
@@ -90,7 +90,7 @@ def insertInNasdaqFromYahoo(symbol, time_frame, rate, cur, conn):
     # Conferma la transazione e stampa un messaggio
     conn.commit()
     
-    print(f"Dati relativi al salvataggio di {symbol} nella data: {datetime.strptime(rate[7], '%Y-%m-%d %H:%M:%S')} salvati nel db.\n")
+    print(f"Dati relativi al salvataggio di {symbol} nella data: {datetime.strptime(rate[7], '%Y-%m-%d')} salvati nel db.\n")
     
     return 0
 
@@ -113,8 +113,8 @@ def insertInNyseFromYahoo(symbol, time_frame, rate, cur, conn):
                 (
                     symbol,
                     time_frame,
-                    datetime.strptime(rate[7], '%Y-%m-%d %H:%M:%S'),
-                    datetime.strptime(rate[8], '%Y-%m-%d %H:%M:%S'),
+                    datetime.strptime(rate[7], '%Y-%m-%d'),
+                    datetime.strptime(rate[8], '%Y-%m-%d'),
                     convert_numpy_to_python(rate[0]),
                     convert_numpy_to_python(rate[1]),
                     convert_numpy_to_python(rate[2]),
@@ -131,7 +131,7 @@ def insertInNyseFromYahoo(symbol, time_frame, rate, cur, conn):
     # Conferma la transazione e stampa un messaggio
     conn.commit()
     
-    print(f"Dati relativi al salvataggio di {symbol} nella data: {datetime.strptime(rate[7], '%Y-%m-%d %H:%M:%S')} salvati nel db.\n")
+    print(f"Dati relativi al salvataggio di {symbol} nella data: {datetime.strptime(rate[7], '%Y-%m-%d')} salvati nel db.\n")
     
     return 0
 
@@ -156,8 +156,8 @@ def insertInLargeCompEUFromYahoo(symbol, time_frame, rate, cur, conn):
                 (
                     symbol,
                     time_frame,
-                    datetime.strptime(rate[7], '%Y-%m-%d %H:%M:%S'),
-                    datetime.strptime(rate[8], '%Y-%m-%d %H:%M:%S'),
+                    datetime.strptime(rate[7], '%Y-%m-%d'),
+                    datetime.strptime(rate[8], '%Y-%m-%d'),
                     convert_numpy_to_python(rate[0]),
                     convert_numpy_to_python(rate[1]),
                     convert_numpy_to_python(rate[2]),
@@ -174,7 +174,7 @@ def insertInLargeCompEUFromYahoo(symbol, time_frame, rate, cur, conn):
     # Conferma la transazione e stampa un messaggio
     conn.commit()
     
-    print(f"Dati relativi al salvataggio di {symbol} nella data: {datetime.strptime(rate[7], '%Y-%m-%d %H:%M:%S')} salvati nel db.\n")
+    print(f"Dati relativi al salvataggio di {symbol} nella data: {datetime.strptime(rate[7], '%Y-%m-%d')} salvati nel db.\n")
     
     return 0
 
@@ -322,7 +322,32 @@ def insertInSector(nome, cur, conn):
         try:
             # Esegue l'inserimento nella tabella loginDate
             cur.execute(
-                "INSERT INTO Sector (nome) "
+                "INSERT INTO SectorNasdaq (nome) "
+                "VALUES (%s) "
+                "ON CONFLICT (nome) DO NOTHING",
+                (
+                    nome,
+                )
+            )
+        except Exception as e:
+            print("Errore durante l'inserimento dei dati: ", e)
+        
+        # Conferma la transazione e stampa un messaggio
+        conn.commit()
+            
+        print("Dati relativi al  salvati nel db.\n")
+
+
+################################################################################################################################################################################################
+
+def insertInSectorNyse(nome, cur, conn):
+    if cur is not None and conn is not None:
+        #print("\nConnessione al database nasdaq avvenuta con successo.\n")
+        
+        try:
+            # Esegue l'inserimento nella tabella loginDate
+            cur.execute(
+                "INSERT INTO SectorNyse (nome) "
                 "VALUES (%s) "
                 "ON CONFLICT (nome) DO NOTHING",
                 (
@@ -341,23 +366,30 @@ def insertInSector(nome, cur, conn):
 ################################################################################################################################################################################################
 
 
-def insertInTesting(id, agent, numberTest, initial_date, end_date, profit, market, notes, cur, conn):
+def insertInTesting(id, agent, numberTest, initial_date, end_date, profitPerc, profitUSD , market, nPurchase, nSale, middleTimeSaleSecond, middleTimeSaleDay,titleBetterProfit, titleWorseProfit,  notes, cur, conn):
     if cur is not None and conn is not None:
         #print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella loginDate
             cur.execute(
-                "INSERT INTO Testing (id, agent, numberTest, initial_date, end_date, profit, market, notes) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s ) ",
+                "INSERT INTO Testing (id, agent, numberTest, initial_date, end_date, profitPerc, profitUSD, market, nPurchase, nSale, middleTimeSaleSecond, middleTimeSaleDay, titleBetterProfit, titleWorseProfit, notes) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s ) ",
                 (
                     convert_numpy_to_python(id),
                     agent, 
                     convert_numpy_to_python(numberTest),
                     initial_date, 
                     end_date,
-                    convert_numpy_to_python(profit),
+                    convert_numpy_to_python(profitPerc),
+                    convert_numpy_to_python(profitUSD),
                     market,
+                    convert_numpy_to_python(nPurchase),
+                    convert_numpy_to_python(nSale),
+                    convert_numpy_to_python(middleTimeSaleSecond),
+                    convert_numpy_to_python(middleTimeSaleDay),
+                    titleBetterProfit, 
+                    titleWorseProfit,
                     notes
                 )
             )
@@ -372,21 +404,31 @@ def insertInTesting(id, agent, numberTest, initial_date, end_date, profit, marke
 
 ################################################################################################################################################################################################
 
+# idTest, "agent2", roi=mean_profit_perc, devstandard = std_deviation, var= varianza, middleProfitUSD =mean_profit_usd,
+                                                  #middleSale = mean_sale, middlePurchase = mean_purchase, middleTimeSale = mean_time_sale, middletitleBetterProfit = mean_titleBetterProfit,
+                                                   # middletitleWorseProfit = mean_titleWorseProfit, notes=notes, cur=cur, conn=conn)
 
-def insertInMiddleProfit(testId, agent, middleProfit, devst, notes, cur, conn):
+def insertInMiddleProfit(testId, agent, roi, devstandard, var, middleProfitUSD, middleSale, middlePurchase, middleTimeSale,middletitleBetterProfit, middletitleWorseProfit, notes, cur, conn):
     if cur is not None and conn is not None:
         #print("\nConnessione al database nasdaq avvenuta con successo.\n")
         
         try:
             # Esegue l'inserimento nella tabella loginDate
             cur.execute(
-                "INSERT INTO MiddleProfit (testId, agent, middleProfit, devstandard, notes) "
-                "VALUES (%s, %s, %s, %s, %s) ",
+                "INSERT INTO MiddleProfit (testId, agent, roi, devstand, var, profitUSD, middSale, middPurch, middTimeSale, middtitleBettProf, middletiteWorseProf, notes) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s ,%s, %s, %s) ",
                 (
                     convert_numpy_to_python(testId),
                     agent, 
-                    convert_numpy_to_python(middleProfit),
-                    convert_numpy_to_python(devst),
+                    convert_numpy_to_python(roi),
+                    convert_numpy_to_python(devstandard),
+                    convert_numpy_to_python(var),
+                    convert_numpy_to_python(middleProfitUSD),
+                    convert_numpy_to_python(middleSale),
+                    convert_numpy_to_python(middlePurchase),
+                    convert_numpy_to_python(middleTimeSale),
+                    middletitleBetterProfit,
+                    middletitleWorseProfit,
                     notes
                 )
             )

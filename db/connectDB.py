@@ -66,4 +66,5 @@ def connectDB_example ():
 
 
 if __name__ == "__main__":
-    connectDB_example()
+    #connectDB_example()
+    connect_nasdaq()

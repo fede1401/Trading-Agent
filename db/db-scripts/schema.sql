@@ -106,7 +106,12 @@ CREATE TABLE IF NOT EXISTS  DataTrader (
 );
 
 
-CREATE TABLE IF NOT EXISTS Sector (
+CREATE TABLE IF NOT EXISTS SectorNasdaq (
+    nome VARCHAR (50) NOT NULL,
+    PRIMARY KEY(nome)
+);
+
+CREATE TABLE IF NOT EXISTS SectorNyse (
     nome VARCHAR (50) NOT NULL,
     PRIMARY KEY(nome)
 );
@@ -118,17 +123,32 @@ CREATE TABLE IF NOT EXISTS Testing (
     numberTest INTEGER,
     initial_date TIMESTAMP NOT NULL,
     end_date TIMESTAMP NOT NULL,
-    profit DOUBLE PRECISION NOT NULL,
+    profitPerc DOUBLE PRECISION NOT NULL,
+    profitUSD DOUBLE PRECISION NOT NULL,
     market VARCHAR (50) NOT NULL,
+    nPurchase INTEGER NOT NULL,
+    nSale INTEGER NOT NULL,
+    middleTimeSaleSecond DOUBLE PRECISION NOT NULL,
+    middleTimeSaleDay DOUBLE PRECISION NOT NULL,
+    titleBetterProfit VARCHAR (50) NOT NULL,
+    titleWorseProfit VARCHAR (50) NOT NULL,
     notes VARCHAR (1000)
 );
+
 
 
 CREATE TABLE IF NOT EXISTS MiddleProfit (
     testId INTEGER NOT NULL,
     agent VARCHAR (50) NOT NULL,
-    middleProfit DOUBLE PRECISION NOT NULL,
-    devstandard DOUBLE PRECISION NOT NULL,
+    roi DOUBLE PRECISION NOT NULL,
+    devstand DOUBLE PRECISION NOT NULL,
+    var DOUBLE PRECISION NOT NULL,
+    profitUSD DOUBLE PRECISION NOT NULL,
+    middSale DOUBLE PRECISION NOT NULL,
+    middPurch DOUBLE PRECISION NOT NULL,
+    middTimeSale DOUBLE PRECISION NOT NULL,
+    middtitleBettProf VARCHAR (50) NOT NULL,
+    middletiteWorseProf VARCHAR (50) NOT NULL,
     notes VARCHAR (1000)
     -- FOREIGN KEY (testId) REFERENCES Testing(id)
 );
