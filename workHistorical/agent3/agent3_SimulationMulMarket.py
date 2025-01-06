@@ -3,6 +3,8 @@ import sys
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols')
+sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/workHistorical')
+
 
 import agentState
 from db import insertDataDB, connectDB
@@ -43,77 +45,105 @@ def main(datesToTrade):
         middletitleWorseProfit = []                                                                                            # lista che conterrà i profitti relativi a tutte le iterazioni
         
         #datesToTrade = generateiRandomDates(cur, 100)                                                            # generazione di 100 date casuali per il trading
-        
-        market = ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']                                    # mercati su cui effettuare trading
+
+        list_take_profit = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50,
+                            0.60, 0.70, 0.80, 0.90, 1.00]
+        #list_take_profit = [0.90, 1.00]
+
+        market = ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']
+        #market = ['larg_comp_eu_actions']
+        # mercati su cui effettuare trading
         for m in market:
+            idTest = getLastIdTest(cur)
+            insertDataDB.insertInMiddleProfit(idTest, "------", roi=0, devstandard=0, var=0, middleProfitUSD=0,
+                                              middleSale=0, middlePurchase=0, middleTimeSale=0,
+                                              middletitleBetterProfit='----',
+                                              middletitleWorseProfit=0, notes='---', cur=cur, conn=conn)
             if m == 'nasdaq_actions':
-                # Recupero i simboli azionari del Nasdaq, in teoria dovrei lavorare con 100 simboli, ma nella funzione tradingYear_purchase_one_after_the_other vado a recupare i 100 simboli disponibili per cap descrescente.
+                # Recupero i simboli azionari del Nasdaq, in teoria dovrei lavorare con 100 simboli, ma nella
+                # funzione tradingYear_purchase_one_after_the_other vado a recuperare i 100 simboli disponibili per cap
+                # descrescente.
                 symbols = getSymbols.getSymbolsNasdaq(350)
             elif m == 'nyse_actions':
                 symbols = getSymbols.getSymbolsNyse(350)
             elif m == 'larg_comp_eu_actions':
                 symbols = getSymbols.getSymbolsLargestCompEU(350)
-                
-            idTest = getLastIdTest(cur)                                                                         # recupero dell'ultimo id del testing
-            
-            # Ciclo principale
-            for i in range(100):
-                TK = 1/100                                                                                      # definizione take profit dell'1%: valore percentuale di profitto da raggiungere per vendere
-                
-                clearSomeTablesDB(cur, conn)
-                trade_date, initial_date, endDate = datesToTrade[i]
-                profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear(cur, conn, symbols, trade_date, m, TK, initial_date, endDate)
-                    
-                    # profitNotReinvestedPerc, profitNotReinvested, ticketSale, ticketPur, float(np.mean(middleTimeSale)), max(titleProfit[symbol]), min(titleProfit[symbol])
-                    
-                print(f"\nProfitto per il test {idTest} con TP={TK}%, {m}, buy one after the other: {profitPerc}, rimangono {100 - i -1} iterazioni\n")
-                    
-                profitPerc = round(profitPerc, 4)
-                insertDataDB.insertInTesting( idTest, "agent3", i, initial_date=initial_date, end_date=endDate, profitPerc=profitPerc, profitUSD =profitUSD,
-                                                 market=m, nPurchase = nPurchase, nSale= nSale, middleTimeSaleSecond=middleTimeSale, middleTimeSaleDay= (middleTimeSale/86400),
-                                                 titleBetterProfit=titleBetterProfit, titleWorseProfit=titleWorseProfit, notes=f"TAKE PROFIT = {TK}% ", cur=cur, conn=conn)
-                    
-                profTot.append(profitUSD)
-                roi.append(profitPerc)
-                middleSale.append(nSale)
-                middlePurchase.append(nPurchase)
-                MmiddleTimeSale.append(middleTimeSale)
-                middletitleBetterProfit.append(titleBetterProfit)
-                middletitleWorseProfit.append(titleWorseProfit)
-                
 
-            # Calcolo delle statistiche
-            mean_profit_perc = round(float(np.mean(roi)), 4)
-            std_deviation = round(float(np.std(roi)), 4)
-            varianza = round(float(np.var(roi)), 4)
-            mean_profit_usd = round(float(np.mean(profTot)), 4)
-            mean_sale = round(float(np.mean(middleSale)), 4)
-            mean_purchase = round(float(np.mean(middlePurchase)), 4)
-            mean_time_sale = round(float(np.mean(MmiddleTimeSale)), 4)
-                
-            dizBetterTitle = {}
-            for title in middletitleBetterProfit:
-                if title in dizBetterTitle:
-                    dizBetterTitle[title] += 1
-                else:
-                    dizBetterTitle[title] = 1
-                    
-            dizWorseTitle = {}
-            for title in middletitleWorseProfit:
-                if title in dizWorseTitle:
-                    dizWorseTitle[title] += 1
-                else:
-                    dizWorseTitle[title] = 1
-                        
-            mean_titleBetterProfit = max(dizBetterTitle, key=dizBetterTitle.get)
-            mean_titleWorseProfit = max(dizWorseTitle, key=dizWorseTitle.get)
-                
-                #logging.info(f"Profitto medio: {mean_profit}, Deviazione standard: {std_deviation}")
-                
-            notes = f"TP:{TK}%, {m}, buy no randomly but one after the other and buy only if the price is lower than the middle price"
-            insertDataDB.insertInMiddleProfit(idTest, "agent3", roi=mean_profit_perc, devstandard = std_deviation, var= varianza, middleProfitUSD =mean_profit_usd,
-                                                  middleSale = mean_sale, middlePurchase = mean_purchase, middleTimeSale = (mean_time_sale/86400), middletitleBetterProfit = mean_titleBetterProfit,
-                                                    middletitleWorseProfit = mean_titleWorseProfit, notes=notes, cur=cur, conn=conn)
+            for i in range(len(list_take_profit)):  # Per ogni valore di Take Profit (1%-10%)
+                roi = []
+                profTot = []
+                middleSale = []
+                middlePurchase = []
+                MmiddleTimeSale = []
+                middletitleBetterProfit = []
+                middletitleWorseProfit = []
+
+                TK = list_take_profit[i]
+                idTest = getLastIdTest(cur)
+
+                total_steps = 100  # Numero di iterazioni principali
+                for step in range(total_steps):
+
+                    clearSomeTablesDB(cur, conn)
+                    trade_date, initial_date, endDate = datesToTrade[step]
+                    profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear(cur, conn, symbols, trade_date, m, TK, initial_date, endDate)
+
+                        # profitNotReinvestedPerc, profitNotReinvested, ticketSale, ticketPur, float(np.mean(middleTimeSale)), max(titleProfit[symbol]), min(titleProfit[symbol])
+
+                    print(f"\nProfitto per il test {idTest} con TP={TK}%, {m}, buy one after the other: {profitPerc}, rimangono {total_steps - step -1} iterazioni\n")
+
+                    profitPerc = round(profitPerc, 4)
+                    insertDataDB.insertInTesting(idTest, "agent3", i, initial_date=initial_date, end_date=endDate,
+                                                 profitPerc=profitPerc, profitUSD=profitUSD,
+                                                 market=m, nPurchase=nPurchase, nSale=nSale,
+                                                 middleTimeSaleSecond=middleTimeSale,
+                                                 middleTimeSaleDay=(middleTimeSale / 86400),
+                                                 titleBetterProfit=titleBetterProfit, titleWorseProfit=titleWorseProfit,
+                                                 notes=f"TAKE PROFIT = {TK}% ", cur=cur, conn=conn)
+
+                    profTot.append(profitUSD)
+                    roi.append(profitPerc)
+                    middleSale.append(nSale)
+                    middlePurchase.append(nPurchase)
+                    MmiddleTimeSale.append(middleTimeSale)
+                    middletitleBetterProfit.append(titleBetterProfit)
+                    middletitleWorseProfit.append(titleWorseProfit)
+
+
+                # Calcolo delle statistiche
+                mean_profit_perc = round(float(np.mean(roi)), 4)
+                std_deviation = round(float(np.std(roi)), 4)
+                varianza = round(float(np.var(roi)), 4)
+                mean_profit_usd = round(float(np.mean(profTot)), 4)
+                mean_sale = round(float(np.mean(middleSale)), 4)
+                mean_purchase = round(float(np.mean(middlePurchase)), 4)
+                mean_time_sale = round(float(np.mean(MmiddleTimeSale)), 4)
+
+                dizBetterTitle = {}
+                for title in middletitleBetterProfit:
+                    if title in dizBetterTitle:
+                        dizBetterTitle[title] += 1
+                    else:
+                        dizBetterTitle[title] = 1
+
+                dizWorseTitle = {}
+                for title in middletitleWorseProfit:
+                    if title in dizWorseTitle:
+                        dizWorseTitle[title] += 1
+                    else:
+                        dizWorseTitle[title] = 1
+
+                mean_titleBetterProfit = max(dizBetterTitle, key=dizBetterTitle.get)
+                mean_titleWorseProfit = max(dizWorseTitle, key=dizWorseTitle.get)
+
+                    #logging.info(f"Profitto medio: {mean_profit}, Deviazione standard: {std_deviation}")
+
+                notes = f"TP:{TK}%, {m}, buy no randomly but one after the other and buy only if the price is lower than the middle price"
+                insertDataDB.insertInMiddleProfit(idTest, "agent3", roi=mean_profit_perc, devstandard=std_deviation,
+                                                  var=varianza, middleProfitUSD =mean_profit_usd,
+                                                  middleSale = mean_sale, middlePurchase=mean_purchase,
+                                                  middleTimeSale = (mean_time_sale/86400), middletitleBetterProfit=mean_titleBetterProfit,
+                                                  middletitleWorseProfit=mean_titleWorseProfit, notes=notes, cur=cur, conn=conn)
 
     except Exception as e:
         logging.critical(f"Errore non gestito: {e}")
@@ -129,15 +159,17 @@ def main(datesToTrade):
 
 def tradingYear(cur, conn, symbols, trade_date, market, TP, initial_date, endDate):
     
-    # Inizializzazione ad ogni iterazione
+    # Inizializzazione a ogni iterazione
     budget = budgetInvestimenti = initial_budget = 1000
-    profitTotalUSD = profitTotalPerc = profitNotReinvested = profitNotReinvestedPerc = equity = margin = ticketPur = ticketSale = budgetMantenimento = nSaleProfit =  0
+    profitTotalUSD = profitTotalPerc = profitNotReinvested = profitNotReinvestedPerc = equity = margin = ticketPur = ticketSale = budgetMantenimento = nSaleProfit = 0
     i = 0   # utilizzata per la scelta del titolo azionario da acquistare
     middleTimeSale = []
     titleProfit = {}
+    sales = set()
 
-    # Inserimento dei dati iniziali dell'agente nel database
-    #insertDataDB.insertInDataTrader(trade_date, agentState.AgentState.INITIAL, initial_budget, 1000, 0, 0, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+    # Inserimento dei dati iniziali dell'agente nel database insertDataDB.insertInDataTrader(trade_date,
+    # agentState.AgentState.INITIAL, initial_budget, 1000, 0, 0, profitTotalUSD, profitTotalPerc, budgetMantenimento,
+    # budgetInvestimenti, cur, conn)
                 
     stateAgent = agentState.AgentState.SALE
             
@@ -147,22 +179,39 @@ def tradingYear(cur, conn, symbols, trade_date, market, TP, initial_date, endDat
     symbolDisp = []
     for sy in resSymbolDisp:
         if sy[0] in symbols:
-            if len(symbolDisp) <= 100:
+            if len(symbolDisp) < 100:
                 symbolDisp.append(sy[0])
     #symbolDisp = [sy[0] for sy in resSymbolDisp if sy[0] in symbols]
     symbolDisp1 = symbolDisp.copy()
+
+    # Ottimizzazione 4: Recupera TUTTI i prezzi per il periodo in una sola query
+    cur.execute(
+        f"SELECT symbol, time_value_it, open_price, high_price FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
+    all_prices = cur.fetchall()
+
+    # Crea un dizionario per l'accesso rapido ai prezzi
+    prices_dict = {}
+    for symbol, time_value_it, open_price, high_price in all_prices:
+        prices_dict[(symbol, time_value_it.strftime('%Y-%m-%d %H:%M:%S'))] = (open_price, high_price)
+
+    # Ottengo tutte le date per l'iterazione:
+    cur.execute(
+        f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{initial_date}' and time_value_it < '{endDate}' order by time_value_it;")
+    datesTrade = cur.fetchall()
+
+    i_for_date = 0
     
     
     # Il ciclo principale esegue le operazioni di trading per 1 anno
     while True:
 
             ######################## inizio SALE
-            if stateAgent == agentState.AgentState.SALE:
+            if stateAgent == agentState.AgentState.SALE or stateAgent == agentState.AgentState.SALE_IMMEDIATE:
                 #logging.info(f"Agent entrato nello stato Sale\n")
 
                 # Recupera i ticker relativi agli acquisti già venduti nel db.
-                cur.execute("SELECT ticket_pur FROM sale")
-                sales = {int(sale[0]) for sale in cur.fetchall()}
+                #cur.execute("SELECT ticket_pur FROM sale")
+                #sales = {int(sale[0]) for sale in cur.fetchall()}
 
                 # Recupera tutti valori delle colonne degli acquisti nel db.
                 cur.execute("SELECT * FROM purchase order by now;")
@@ -173,76 +222,89 @@ def tradingYear(cur, conn, symbols, trade_date, market, TP, initial_date, endDat
                     datePur, ticketP, volume, symbol, price_open = pur[0], pur[2], pur[3], pur[4], pur[5]
                     
                     # Se il ticket di acquisto del simbolo: symbol è già stato venduto, allora non dobbiamo analizzarlo e si passa al prossimo acquisto.
-                    if int(ticketP) in sales:
+                    if ticketP in sales:
                         continue
+
+                    price_data = prices_dict.get((symbol, trade_date))
+                    if price_data:
+                        open_price_from_dict, price_current = price_data
+
+                        if price_current == None:
+                            continue
                     
                     # Recupero del prezzo più alto relativo alla giornata di trading del simbolo azionario
-                    cur.execute( f"SELECT high_price FROM {market} WHERE symbol = '{symbol}' AND time_value_it='{trade_date}';" )    
-                    result = cur.fetchone()
+                    #cur.execute( f"SELECT high_price FROM {market} WHERE symbol = '{symbol}' AND time_value_it='{trade_date}';" )
+                    #result = cur.fetchone()
 
-                    if not result:
+                    #if not result:
                         #logging.info(f"Simbolo {symbol} non presente alla data: {trade_date}")
-                        continue
+                    #    continue
 
                     # Memorizzo il risultato relativo al prezzo più alto della giornata di trading
-                    price_current = result[0]
+                    #price_current = result[0]
 
-                    # Se il prezzo corrente è maggiore del prezzo iniziale di acquisto c'è un qualche profitto
-                    if price_current > price_open:   #logging.info( f"Price current: {price_current} maggiore del prezzo di apertura: {price_open}\n" )
+                        # Se il prezzo corrente è maggiore del prezzo iniziale di acquisto c'è un qualche profitto
+                        if price_current > price_open:   #logging.info( f"Price current: {price_current} maggiore del prezzo di apertura: {price_open}\n" )
 
-                        # Calcolo del profitto:
-                        profit = price_current - price_open
-                        perc_profit = profit / price_open
+                            # Calcolo del profitto:
+                            profit = price_current - price_open
+                            perc_profit = profit / price_open
 
-                        if perc_profit > TP:
+                            if perc_profit > TP:
 
-                            # aggiorno il budget
-                            budgetInvestimenti = budgetInvestimenti + ( price_open * volume )
+                                # aggiorno il budget
+                                budgetInvestimenti = budgetInvestimenti + ( price_open * volume )
 
-                            # Per la strategia dell'investitore prudente soltanto il 10% del guadagno lo reinvesto
-                            profit_10Perc = (profit * 10) / 100
-                            profit_90Perc = (profit * 90) / 100
-                            budgetInvestimenti = budgetInvestimenti + ( profit_10Perc * volume )
-                            budgetMantenimento = budgetMantenimento + ( profit_90Perc * volume )
+                                # Per la strategia dell'investitore prudente soltanto il 10% del guadagno lo reinvesto
+                                profit_10Perc = (profit * 10) / 100
+                                profit_90Perc = (profit * 90) / 100
+                                budgetInvestimenti = budgetInvestimenti + ( profit_10Perc * volume )
+                                budgetMantenimento = budgetMantenimento + ( profit_90Perc * volume )
 
-                            ticketSale += 1
-                            nSaleProfit += 1
-                            
-                            dateObject = datetime.strptime(trade_date, '%Y-%m-%d %H:%M:%S')
-                            #datePur = datetime.strptime(datePur, '%Y-%m-%d %H:%M:%S')
+                                ticketSale += 1
+                                nSaleProfit += 1
 
-                            # Inserimento dei dati relativi alla vendita del simbolo azionario nel database                            
-                            insertDataDB.insertInSale(dateObject, datePur, ticketP, ticketSale, volume, symbol, price_current, price_open, profit, perc_profit, cur, conn)
-                            
-                            middleTimeSale.append((dateObject - datePur).total_seconds())
-                            
-                            if symbol in titleProfit:
-                                titleProfit[symbol] += [perc_profit]
-                            else:
-                                titleProfit[symbol] = [perc_profit]
-                            
-                            # Aggiornamento del valore dei profitti totali (comprensivi di anche i dollari che reinvesto)
-                            profitTotalUSD += profit * volume
-                            profitTotalPerc = (profitTotalUSD/initial_budget)*100
-                            
-                            
-                            # Aggiornamento del valore dei profitti totali (comprensivi dei dollari che non reinvesto)
-                            profitNotReinvested = budgetMantenimento
-                            profitNotReinvestedPerc = (profitNotReinvested/initial_budget)*100
-                            
-                            
-                            # Aggiornamento dello stato dell'agent nel database
-                            #insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-                            
-                            #logging.info( f"Venduta azione {symbol} in data:{trade_date} comprata in data:{datePur}, prezzo attuale:{price_current}, 
-                            # prezzo di acquisto: {price_open}, con profitto di: {profit} = {perc_profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}")
+                                dateObject = datetime.strptime(trade_date, '%Y-%m-%d %H:%M:%S')
+                                #datePur = datetime.strptime(datePur, '%Y-%m-%d %H:%M:%S')
+
+                                # Inserimento dei dati relativi alla vendita del simbolo azionario nel database
+                                insertDataDB.insertInSale(dateObject, datePur, ticketP, ticketSale, volume, symbol,
+                                                          price_current, price_open, profit, perc_profit, cur, conn)
+
+                                middleTimeSale.append((dateObject - datePur).total_seconds())
+
+                                sales.add(ticketP)
+
+                                if symbol in titleProfit:
+                                    titleProfit[symbol] += [perc_profit]
+                                else:
+                                    titleProfit[symbol] = [perc_profit]
+
+                                # Aggiornamento del valore dei profitti totali (comprensivi di anche i dollari che reinvesto)
+                                profitTotalUSD += profit * volume
+                                profitTotalPerc = (profitTotalUSD/initial_budget)*100
+
+
+                                # Aggiornamento del valore dei profitti totali (comprensivi dei dollari che non reinvesto)
+                                profitNotReinvested = budgetMantenimento
+                                profitNotReinvestedPerc = (profitNotReinvested/initial_budget)*100
+
+
+                                # Aggiornamento dello stato dell'agent nel database
+                                #insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+
+                                #logging.info( f"Venduta azione {symbol} in data:{trade_date} comprata in data:{datePur}, prezzo attuale:{price_current},
+                                # prezzo di acquisto: {price_open}, con profitto di: {profit} = {perc_profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}")
 
                 price_open = -1
                 price_current = -1
                 
-                # Una volta controllati tutti i simboli azionari si passa allo stato di compravendita.
-                #logging.info(f"Cambio di stato da SALE a PURCHASE\n\n")
-                stateAgent = agentState.AgentState.PURCHASE
+                if stateAgent == agentState.AgentState.SALE:
+                    # Una volta controllati tutti i simboli azionari si passa allo stato di compravendita.
+                    stateAgent = agentState.AgentState.PURCHASE  # logging.info(f"Cambio di stato da SALE a PURCHASE\n\n")
+
+                if stateAgent == agentState.AgentState.SALE_IMMEDIATE:
+                    stateAgent = agentState.AgentState.WAIT  # logging.info(f"Cambio di stato da SALE IMMEDIATE a WAIT\n\n")
 
             ######################## fine SALE
 
@@ -251,171 +313,83 @@ def tradingYear(cur, conn, symbols, trade_date, market, TP, initial_date, endDat
             if stateAgent == agentState.AgentState.PURCHASE:   #logging.info(f"Agent entrato nello stato Purchase\n")
                 
                 j = 0      # indice utilizzato per passare alla giornata successiva se non si riesce a comprare nulla.
-                
+                numb_purch = 0
+                i = 0
+
                 # Acquisto di azioni dal pool di titoli azionari finché c'è budget
-                while budgetInvestimenti > 0:    
-                    
+                while budgetInvestimenti > 0:
+
                     if j == len(symbolDisp1):
                         break
                        
                     # Scelgo un'azione da acquistare dal pool di titoli azionari 
                     if i == len(symbolDisp1):
-                        i = 0
+                        if numb_purch == 0:
+                            break
+                        else:
+                            i = 0
+
                     chosen_symbol = symbolDisp1[i]  #chosen_symbol = symbolDisp[random.randint(0, len(symbolDisp) - 1)]
                     
                     i += 1
                     
                     # Recupero del prezzo di apertura del simbolo azionario scelto nella giornata attuale di trading
-                    cur.execute(f"SELECT open_price FROM {market} WHERE time_value_it = '{trade_date}' AND symbol='{chosen_symbol}';")
-                    price = cur.fetchone() # Recupera i dati come lista di tuple
-                    
-                    if price == None:  #logging.info(f"Simbolo {chosen_symbol} non trovato nella data specificata.")
-                        j += 1
-                        continue
-                        
-                 
-                    price = price[0]
-                    if price == 0:  # Se il prezzo è = 0, allora non si può acquistare
-                        j += 1
-                        continue   
-                                         
-                    
-                    # Verifica se il simbolo è in un settore accettato e se è presente tra tutti i settori nek database:
-                    #if chosen_symbol in sectorSymbols and sectorSymbols[chosen_symbol] in sectors:
-                        
-                    middlePrice = getValueMiddlePrice(chosen_symbol, market, trade_date, cur)
-                        
-                    if price < middlePrice:
-                        
-                        # Calcolo volume e aggiornamento budget
-                        volumeAcq = float(10 / price)
-                        if volumeAcq == 0:
+                    #cur.execute(f"SELECT open_price FROM {market} WHERE time_value_it = '{trade_date}' AND symbol='{chosen_symbol}';")
+                    #price = cur.fetchone() # Recupera i dati come lista di tuple
+
+                    price_data = prices_dict.get((chosen_symbol, trade_date))
+                    if price_data:
+                        price, _ = price_data
+
+                        if price == None:  #logging.info(f"Simbolo {chosen_symbol} non trovato nella data specificata.")
+                            j += 1
                             continue
-                        ticketPur += 1
-                        dateObject = datetime.strptime(trade_date, '%Y-%m-%d %H:%M:%S')
 
-                        # Inserimento nel database
-                        insertDataDB.insertInPurchase(trade_date, ticketPur, volumeAcq, chosen_symbol, price, cur, conn)
-                        budgetInvestimenti -= (price * volumeAcq)
+                        #price = price[0]
+                        if price == 0:  # Se il prezzo è = 0, allora non si può acquistare
+                            j += 1
+                            continue
 
-                        # Aggiornamento stato
-                        #insertDataDB.insertInDataTrader(trade_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-                                
-                            # Logging dell'acquisto
-                            #if logging.getLogger().isEnabledFor(logging.INFO):
-                                #logging.info(f"Acquistata azione {chosen_symbol} in data: {trade_date}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}")
-                                
-                    else:
-                        j += 1
-                        
-                        continue
-                    
-                    #else:
-                    #    if logging.getLogger().isEnabledFor(logging.INFO):
-                    #        logging.info(f"Settore di appartenenza per {chosen_symbol} non valido o non trovato.")
+                        # Verifica se il simbolo è in un settore accettato e se è presente tra tutti i settori nek database:
+                        #if chosen_symbol in sectorSymbols and sectorSymbols[chosen_symbol] in sectors:
 
-                #logging.info(f"Cambio di stato da PURCHASE a WAIT\n\n")
+                        middlePrice = getValueMiddlePrice(chosen_symbol, market, trade_date, cur)
+
+                        if price < middlePrice:
+
+                            # Calcolo volume e aggiornamento budget
+                            volumeAcq = float(10 / price)
+                            if volumeAcq == 0:
+                                continue
+                            ticketPur += 1
+                            dateObject = datetime.strptime(trade_date, '%Y-%m-%d %H:%M:%S')
+
+                            # Inserimento nel database
+                            insertDataDB.insertInPurchase(trade_date, ticketPur, volumeAcq, chosen_symbol, price, cur, conn)
+                            budgetInvestimenti -= (price * volumeAcq)
+
+                            # Aggiornamento stato
+                            #insertDataDB.insertInDataTrader(trade_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
+
+                                # Logging dell'acquisto
+                                #if logging.getLogger().isEnabledFor(logging.INFO):
+                                    #logging.info(f"Acquistata azione {chosen_symbol} in data: {trade_date}, prezzo: {price}, budgetInvestimenti: {budgetInvestimenti}")
+
+                        else:
+                            j += 1
+
+                            continue
+
+                        #else:
+                        #    if logging.getLogger().isEnabledFor(logging.INFO):
+                        #        logging.info(f"Settore di appartenenza per {chosen_symbol} non valido o non trovato.")
+
+                    #logging.info(f"Cambio di stato da PURCHASE a WAIT\n\n")
 
                 # Dopo lo stato di acquisto il programma entra nello stato di attesa
                 stateAgent = agentState.AgentState.SALE_IMMEDIATE
 
             ######################## fine PURCHASE
-            
-            
-            ########################  inizio SALE_IMMEDIATE
-    
-            if stateAgent == agentState.AgentState.SALE_IMMEDIATE:   #logging.info(f"Cambio di stato da WAIT a SALE_IMMEDIATE\n\n")
-                
-                # Recupera i ticker relativi agli acquisti già venduti nel db.
-                cur.execute("SELECT ticket_pur FROM sale")
-                sales = {int(sale[0]) for sale in cur.fetchall()}   #logging.info(f"I ticket delle vendite già effettuate sono: {sales}\n")
-
-                # Recupera tutti valori delle colonne degli acquisti nel db.
-                cur.execute("SELECT * FROM purchase order by now;")
-                purchasesDB = cur.fetchall()
-                
-                # Memorizzo le informazioni relative agli acquisti nelle variabili seguenti:
-                for pur in purchasesDB:
-                    datePur, ticketP, volume, symbol, price_open = pur[0], pur[2], pur[3], pur[4], pur[5]
-                    
-                    # Se il ticket di acquisto del simbolo: symbol è già stato venduto, allora non dobbiamo analizzarlo e si passa al prossimo acquisto.
-                    if int(ticketP) in sales:
-                        continue
-                    
-                    # Recupero del prezzo più alto relativo alla giornata di trading del simbolo azionario
-                    cur.execute( f"SELECT high_price FROM {market} WHERE symbol = '{symbol}' AND time_value_it='{trade_date}';" )    
-                    result = cur.fetchone()
-
-                    if not result:
-                        #logging.info(f"Simbolo {symbol} non presente alla data: {trade_date}")
-                        continue
-
-                    # Memorizzo il risultato relativo al prezzo più alto della giornata di trading
-                    price_current = result[0]
-
-                    # Se il prezzo corrente è maggiore del prezzo iniziale di acquisto c'è un qualche profitto
-                    if price_current > price_open:
-                        #logging.info( f"Price current: {price_current} maggiore del prezzo di apertura: {price_open}\n" )
-
-                        # Calcolo del profitto:
-                        profit = price_current - price_open
-                        perc_profit = profit / price_open
-
-                        # Rivendita con SV come percentuale di profitto
-                        if perc_profit > TP:
-
-                            # aggiorno il budget
-                            budgetInvestimenti = budgetInvestimenti + ( price_open * volume )
-
-                            # Per la strategia dell'investitore prudente soltanto il 10% del guadagno lo reinvesto
-                            profit_10Perc = (profit * 10) / 100
-                            profit_90Perc = (profit * 90) / 100
-                            budgetInvestimenti = budgetInvestimenti + ( profit_10Perc * volume )
-                            budgetMantenimento = budgetMantenimento + ( profit_90Perc * volume )
-
-                            ticketSale += 1
-                            nSaleProfit += 1
-                            
-                            dateObject = datetime.strptime(trade_date, '%Y-%m-%d %H:%M:%S')
-                            #datePur = datetime.strptime(datePur, '%Y-%m-%d %H:%M:%S')
-
-                            # Inserimento dei dati relativi alla vendita del simbolo azionario nel database                            
-                            insertDataDB.insertInSale(dateObject, datePur, ticketP, ticketSale, volume, symbol, price_current, price_open, profit, perc_profit, cur, conn)
-                            
-                            middleTimeSale.append((dateObject - datePur).total_seconds())
-                            
-                            if symbol in titleProfit:
-                                titleProfit[symbol] += [perc_profit]
-                            else:
-                                titleProfit[symbol] = [perc_profit]
-                                
-                            
-                            # Aggiornamento del valore dei profitti totali (comprensivi di anche i dollari che reinvesto)
-                            profitTotalUSD += profit * volume
-                            profitTotalPerc = (profitTotalUSD/initial_budget)*100
-                            
-                            
-                            # Aggiornamento del valore dei profitti totali (comprensivi dei dollari che non reinvesto)
-                            profitNotReinvested = budgetMantenimento
-                            profitNotReinvestedPerc = (profitNotReinvested/initial_budget)*100
-                            
-                            
-                            # Aggiornamento dello stato dell'agent nel database
-                            #insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
-                            
-                            #logging.info( f"Venduta azione {symbol} in data:{trade_date} comprata in data:{datePur}, prezzo attuale:{price_current}, prezzo di acquisto: {price_open}, 
-                            # con profitto di: {profit} = {perc_profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}")
-
-                price_open = -1
-                price_current = -1
-                
-                # Una volta controllati tutti i simboli azionari si passa allo stato di compravendita.
-                #logging.info(f"Cambio di stato da SALE a PURCHASE\n\n")
-                stateAgent = agentState.AgentState.WAIT
-            
-            ########################
-
-
 
             ######################## inizio WAIT
             if stateAgent == agentState.AgentState.WAIT:  #logging.info(f"Agent entrato nello stato Wait\n")
@@ -427,18 +401,25 @@ def tradingYear(cur, conn, symbols, trade_date, market, TP, initial_date, endDat
                 #p = {pu[0] for pu in cur.fetchall()}
                 #logging.info(f"Simboli acquistati in data: {trade_date} sono: {p}")
                 
-                cur.execute( f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{trade_date}' ORDER BY time_value_it LIMIT 1;")
+                #cur.execute( f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{trade_date}' ORDER BY time_value_it LIMIT 1;")
 
-                trade_dateN = cur.fetchone()
+                #trade_dateN = cur.fetchone()
                 
-                trade_date = trade_dateN[0]                    
-                trade_date = trade_date.strftime('%Y-%m-%d %H:%M:%S')
+                #trade_date = trade_dateN[0]
+                #trade_date = trade_date.strftime('%Y-%m-%d %H:%M:%S')
 
-                if trade_date >= endDate:
+                # trade_date = trade_dateN[0]
+                i_for_date += 1
+                if i_for_date < len(datesTrade):
+                    trade_date = datesTrade[i_for_date]
+                    # trade_date = trade_date.strftime('%Y-%m-%d %H:%M:%S')
+                    trade_date = str(trade_date[0])
 
+                #if trade_date >= endDate:
+                if i_for_date >= len(datesTrade):
                     # Recupera i ticker relativi agli acquisti già venduti nel db.
-                    cur.execute("SELECT ticket_pur FROM sale")
-                    sales = {int(sale[0]) for sale in cur.fetchall()}
+                    #cur.execute("SELECT ticket_pur FROM sale")
+                    #sales = {int(sale[0]) for sale in cur.fetchall()}
                     
                     # Recupera tutti valori delle colonne degli acquisti nel db.
                     cur.execute("SELECT * FROM purchase order by now;")
@@ -449,16 +430,23 @@ def tradingYear(cur, conn, symbols, trade_date, market, TP, initial_date, endDat
                         datePur, ticketP, volume, symbol, price_open = pur[0], pur[2], pur[3], pur[4], pur[5]
                         
                         # Se il ticket di acquisto del simbolo: symbol è già stato venduto, allora non dobbiamo analizzarlo e si passa al prossimo acquisto.
-                        if int(ticketP) in sales:
+                        if ticketP in sales:
                             continue
                         
                         # Recupero del prezzo più alto relativo alla giornata di trading del simbolo azionario
-                        cur.execute(f"SELECT high_price FROM {market} WHERE symbol = '{symbol}' AND time_value_it='{trade_date}';")
-                        result = cur.fetchone()
+                        #cur.execute(f"SELECT high_price FROM {market} WHERE symbol = '{symbol}' AND time_value_it='{trade_date}';")
+                        #result = cur.fetchone()
+
+                        price_data = prices_dict.get((symbol, trade_date))
+                        if price_data:
+                            open_price_from_dict, price_current = price_data
+
+                            if price_current == None:
+                                continue
                         
-                        if result:
+                        #if result:
                             # Memorizzo il risultato relativo al prezzo più alto della giornata di trading
-                            price_current = result[0]    
+                        #    price_current = result[0]
                             
                             if price_current > price_open:   
                                 # Calcolo del profitto:
@@ -475,7 +463,9 @@ def tradingYear(cur, conn, symbols, trade_date, market, TP, initial_date, endDat
 
                                 # Inserimento dei dati relativi alla vendita del simbolo azionario nel database
                                 insertDataDB.insertInSale( dateObject, datePur, ticketP, ticketSale, volume, symbol, price_current, price_open, profit, perc_profit, cur, conn )
-                                    
+
+                                sales.add(ticketP)
+
                                 # Aggiornamento del valore dei profitti totali (comprensivi di anche i dollari che reinvesto)
                                 profitTotalUSD += profit * volume
                                 profitTotalPerc = (profitTotalUSD / initial_budget) * 100
@@ -495,7 +485,9 @@ def tradingYear(cur, conn, symbols, trade_date, market, TP, initial_date, endDat
 
                                 # Inserimento dei dati relativi alla vendita del simbolo azionario nel database
                                 insertDataDB.insertInSale(dateObject, datePur, ticketP, ticketSale, volume, symbol, price_current, price_open, 0, 0, cur, conn )
-                                                                    
+
+                                sales.add(ticketP)
+
                                 # Aggiornamento del valore dei profitti totali (comprensivi dei dollari che non reinvesto)
                                 profitNotReinvested = budgetMantenimento
                                 profitNotReinvestedPerc = (profitNotReinvested / initial_budget) * 100
@@ -520,9 +512,13 @@ def tradingYear(cur, conn, symbols, trade_date, market, TP, initial_date, endDat
         if titleProfit[k] < minP:
             minP = titleProfit[k]
             minT = k
-    
-    return profitNotReinvestedPerc, profitNotReinvested, nSaleProfit, ticketPur, float(np.mean(middleTimeSale)), maxT, minT
 
+    if middleTimeSale == []:
+        return profitNotReinvestedPerc, profitNotReinvested, nSaleProfit, ticketPur, 0, maxT, minT
+
+    else:
+        return profitNotReinvestedPerc, profitNotReinvested, nSaleProfit, ticketPur, float(
+            np.mean(middleTimeSale)), maxT, minT
 
 
 
@@ -547,11 +543,11 @@ if __name__ == "__main__":
 
     # Connessione al database
     cur, conn = connectDB.connect_nasdaq()
-    datesToTrade = generateiRandomDates(cur, 100)
+    #datesToTrade = generateiRandomDates(cur, 100)
     
     cur.close()
     conn.close()
 
-    main(datesToTrade)
+    #main(datesToTrade)
 
 
