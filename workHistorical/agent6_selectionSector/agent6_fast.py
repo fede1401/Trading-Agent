@@ -148,6 +148,38 @@ def main(datesToTrade, dizNasdaq, dizNyse, perc):
         logging.shutdown()
 
 
+def getSymbolsDispoible(cur, symbols, market, initial_date, endDate):
+    try:
+        # Recupero dei simboli azionari disponibili per le date di trading scelte. 
+        cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
+        # symbolDisp = [sy[0] for sy in resSymbolDisp if sy[0] in symbols]
+        symbolDisp = []
+        for sy in cur.fetchall():
+            if sy[0] in symbols:
+                if len(symbolDisp) < len(symbols):
+                    symbolDisp.append(sy[0])
+    except Exception as e:
+        logging.critical(f"Errore non gestito: {e}")
+        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+    finally:
+        return symbolDisp
+
+
+
+def getPrices(cur, market, initial_date, endDate):
+    try:
+        cur.execute( f"SELECT symbol, time_value_it, open_price, high_price FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
+        
+        # Crea un dizionario per l'accesso rapido ai prezzi
+        prices_dict = {}
+        for symbol, time_value_it, open_price, high_price in cur.fetchall():
+            prices_dict[(symbol, time_value_it.strftime('%Y-%m-%d %H:%M:%S'))] = (open_price, high_price)
+    
+    except Exception as e:
+        logging.critical(f"Errore non gestito: {e}")
+        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+    finally:
+        return prices_dict
 
 
 
@@ -163,6 +195,7 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     middleTimeSale = []
     titleProfit = {}
     sales = set()
+    purchases = set()
  
     # Inserimento dei dati iniziali dell'agente nel database
     #insertDataDB.insertInDataTrader(trade_date, agentState.AgentState.INITIAL, initial_budget, 1000, 0, 0, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
@@ -170,31 +203,15 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     stateAgent = agentState.AgentState.SALE
             
     # Recupero dei simboli azionari disponibili per le date di trading scelte. 
-    cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
-    resSymbolDisp = cur.fetchall()
-    #symbolDisp = [sy[0] for sy in resSymbolDisp if sy[0] in symbols]
-    # symbolDisp = [sy[0] for sy in resSymbolDisp if sy[0] in symbols]
-    symbolDisp = []
-    for sy in resSymbolDisp:
-        if sy[0] in symbols:
-            if len(symbolDisp) < len(symbols):
-                symbolDisp.append(sy[0])
-
+    symbolDisp = getSymbolsDispoible(cur, symbols, market, initial_date, endDate)
     symbolDisp1 = symbolDisp.copy()
-
-    # Ottimizzazione 4: Recupera TUTTI i prezzi per il periodo in una sola query
-    cur.execute(
-        f"SELECT symbol, time_value_it, open_price, high_price FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
-    all_prices = cur.fetchall()
-
-    # Crea un dizionario per l'accesso rapido ai prezzi
-    prices_dict = {}
-    for symbol, time_value_it, open_price, high_price in all_prices:
-        prices_dict[(symbol, time_value_it.strftime('%Y-%m-%d %H:%M:%S'))] = (open_price, high_price)
+    # logging.info(f"Simboli azionari disponibili per il trading: {symbolDisp}\n")
+    
+    # Ottimizzazione 4: Recupera TUTTI i prezzi dei simboli disponibili per il periodo in una sola query
+    prices_dict = getPrices(cur, market, initial_date, endDate)
 
     # Ottengo tutte le date per l'iterazione:
-    cur.execute(
-        f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{initial_date}' and time_value_it < '{endDate}' order by time_value_it;")
+    cur.execute( f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{initial_date}' and time_value_it < '{endDate}' order by time_value_it;")
     datesTrade = cur.fetchall()
 
     i_for_date = 0
@@ -203,20 +220,11 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     while True:
 
             ######################## inizio SALE
-            if stateAgent == agentState.AgentState.SALE or stateAgent == agentState.AgentState.SALE_IMMEDIATE:
-                #logging.info(f"Agent entrato nello stato Sale\n")
+            if stateAgent == agentState.AgentState.SALE or stateAgent == agentState.AgentState.SALE_IMMEDIATE: #-->  logging.info(f"Agent entrato nello stato Sale\n")
 
-                # Recupera i ticker relativi agli acquisti già venduti nel db.
-                #cur.execute("SELECT ticket_pur FROM sale")
-                #sales = {int(sale[0]) for sale in cur.fetchall()}     #logging.info(f"I ticket delle vendite già effettuate sono: {sales}\n")
-
-                # Recupera tutti valori delle colonne degli acquisti nel db.
-                cur.execute("SELECT * FROM purchase order by now;")
-                purchasesDB = cur.fetchall()
-                
                 # Memorizzo le informazioni relative agli acquisti nelle variabili seguenti:
-                for pur in purchasesDB:
-                    datePur, ticketP, volume, symbol, price_open = pur[0], pur[2], pur[3], pur[4], pur[5]
+                for pur in purchases:
+                    datePur, ticketP, volume, symbol, price_open =  pur[0], pur[1], pur[2], pur[3], pur[4]
                     
                     # Se il ticket di acquisto del simbolo: symbol è già stato venduto, allora non dobbiamo analizzarlo e si passa al prossimo acquisto.
                     if ticketP in sales:
@@ -228,17 +236,6 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
 
                         if price_current == None:
                             continue
-
-                    # Recupero del prezzo più alto relativo alla giornata di trading del simbolo azionario
-                    #cur.execute( f"SELECT high_price FROM {market} WHERE symbol = '{symbol}' AND time_value_it='{trade_date}';" )
-                    #result = cur.fetchone()
-
-                    #if not result:
-                        #logging.info(f"Simbolo {symbol} non presente alla data: {trade_date}")
-                    #    continue
-
-                    # Memorizzo il risultato relativo al prezzo più alto della giornata di trading
-                    #price_current = result[0]
 
                         # Se il prezzo corrente è maggiore del prezzo iniziale di acquisto c'è un qualche profitto
                         if price_current > price_open:   #logging.info( f"Price current: {price_current} maggiore del prezzo di apertura: {price_open}\n" )
@@ -295,7 +292,6 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                 price_current = -1
 
                 if stateAgent == agentState.AgentState.SALE:
-                    # Una volta controllati tutti i simboli azionari si passa allo stato di compravendita.
                     stateAgent = agentState.AgentState.PURCHASE  # logging.info(f"Cambio di stato da SALE a PURCHASE\n\n")
 
                 if stateAgent == agentState.AgentState.SALE_IMMEDIATE:
@@ -313,22 +309,16 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                 # Acquisto di azioni in modo casuale dal pool di titoli azionari finché c'è budget
                 while budgetInvestimenti > 0:      
                       
+                    # Se sono stati visti tutti i titoli azionari e c'è ancora budget per acquistare si ricomincia da capo
                     if i == len(symbolDisp1):
                         if numb_purch == 0:
                             break
                         else:
                             i = 0
 
-                    
-                    # Scelgo un'azione random dal pool di titoli azionari
-                    #chosen_symbol = symbolDisp[random.randint(0, len(symbolDisp) - 1)]
                     chosen_symbol = symbolDisp1[i]
                     
                     i += 1
-                    
-                    # Recupero del prezzo di apertura del simbolo azionario scelto nella giornata attuale di trading
-                    #cur.execute(f"SELECT open_price FROM {market} WHERE time_value_it = '{trade_date}' AND symbol='{chosen_symbol}';")
-                    #price = cur.fetchone() # Recupera i dati come lista di tuple
 
                     price_data = prices_dict.get((chosen_symbol, trade_date))
                     if price_data:
@@ -336,8 +326,6 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
 
                         if price == None: #logging.info(f"Simbolo {chosen_symbol} non trovato nella data specificata.")
                             continue
-
-                        #price = price[0]
 
                         if price == 0: # Se il prezzo è = 0, allora non si può acquistare
                             continue
@@ -355,7 +343,10 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
 
                         # Inserimento nel database
                         insertDataDB.insertInPurchase(trade_date, ticketPur, volumeAcq, chosen_symbol, price, cur, conn)
+                        numb_purch += 1
                         budgetInvestimenti -= (price * volumeAcq)
+                        purchases.add((dateObject, ticketPur, volumeAcq, chosen_symbol, price))
+
 
                         # Aggiornamento stato
                         #insertDataDB.insertInDataTrader(trade_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
@@ -379,25 +370,12 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                 # Aggiornamento dello stato dell'agent nel database
                 #insertDataDB.insertInDataTrader(trade_date, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
-                #cur.execute(f"SELECT distinct(symbol), now FROM purchase WHERE datepur = '{trade_date}' order by now;")
-                #p = {pu[0] for pu in cur.fetchall()}
-                #logging.info(f"Simboli acquistati in data: {trade_date} sono: {p}")
-                
-                #cur.execute( f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{trade_date}' ORDER BY time_value_it LIMIT 1;")
-
-                #trade_dateN = cur.fetchone()
-                
-                #trade_date = trade_dateN[0]
-                #trade_date = trade_date.strftime('%Y-%m-%d %H:%M:%S')
-
                 i_for_date += 1
                 if i_for_date < len(datesTrade):
                     trade_date = datesTrade[i_for_date]
-                    # trade_date = trade_date.strftime('%Y-%m-%d %H:%M:%S')
                     trade_date = str(trade_date[0])
 
                 if i_for_date >= len(datesTrade):
-                #if trade_date >= endDate:
                     # Recupera i ticker relativi agli acquisti già venduti nel db.
                     #cur.execute("SELECT ticket_pur FROM sale")
                     #sales = {int(sale[0]) for sale in cur.fetchall()}
@@ -407,27 +385,20 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                     purchasesDB = cur.fetchall()
                     
                     # Memorizzo le informazioni relative agli acquisti nelle variabili seguenti:
-                    for pur in purchasesDB:
-                        datePur, ticketP, volume, symbol, price_open = pur[0], pur[2], pur[3], pur[4], pur[5]
+                    for pur in purchases:
+                        datePur, ticketP, volume, symbol, price_open = pur[0], pur[1], pur[2], pur[3], pur[4]
                         
                         # Se il ticket di acquisto del simbolo: symbol è già stato venduto, allora non dobbiamo analizzarlo e si passa al prossimo acquisto.
                         if ticketP in sales:
                             continue
                         
-                        # Recupero del prezzo più alto relativo alla giornata di trading del simbolo azionario
-                        #cur.execute(f"SELECT high_price FROM {market} WHERE symbol = '{symbol}' AND time_value_it='{trade_date}';")
-                        #result = cur.fetchone()
-
                         price_data = prices_dict.get((symbol, trade_date))
                         if price_data:
                             open_price_from_dict, price_current = price_data
 
                             if price_current == None:
                                 continue
-                        
-                        #if result:
-                            # Memorizzo il risultato relativo al prezzo più alto della giornata di trading
-                        #    price_current = result[0]
+
                             
                             if price_current > price_open:   
                                 # Calcolo del profitto:
@@ -435,7 +406,7 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                                 perc_profit = profit / price_open
                             
                                 # Vendiamo per l'ultima volta e teniamo nel deposito.
-                                budgetMantenimento = budgetMantenimento + (price_open * volume) + profit
+                                budgetMantenimento = budgetMantenimento + (price_open * volume) + (profit * volume)
                                 
                                 ticketSale += 1
                             

@@ -48,7 +48,7 @@ def main(datesToTrade):
 
         #list_take_profit = [1.00]
         #datesToTrade = generateiRandomDates(cur, 100)
-        iterations = [2]
+        iterations = [1,2]
 
         for ite in iterations:
             # Inizio elaborazione per i diversi mercati

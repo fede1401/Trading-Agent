@@ -120,7 +120,7 @@ def downloadANDSaveStocksData(cur, conn, market):
             
         try:
             if start_date:
-                data = yf.download(titol, start=start_date.strftime('%Y-%m-%d'), interval='1d')
+                data = yf.download(titol, start=start_date.strftime('%Y-%m-%d'), interval='1d', auto_adjust=False)
                 data.to_csv(file_path, mode='a')
                 #data.to_csv(file_path, mode='a', header=None)
                 print(f"---------------")
@@ -128,7 +128,7 @@ def downloadANDSaveStocksData(cur, conn, market):
                 print(f"Data for {titol} savely successfully in DB.")
             
             else:
-                data = yf.download(titol, period="max", interval='1d')
+                data = yf.download(titol, period="max", interval='1d', auto_adjust=False)
                 if not data.empty:
                     data.to_csv(file_path, mode='w')
                     #sdata.to_csv(file_path, mode='w', header=None)
@@ -156,10 +156,10 @@ def fillDB(filename, cur, conn, market):
                     print(symbol)
                     # price 0, close 1, high 2, low 3, open 4, volume 5
                     time_value_it = time_value_ny = infoF[0]
-                    close_price = infoF[1]
-                    open_price = infoF[4]
-                    high_price = infoF[2]
-                    low_price = infoF[3]
+                    close_price = infoF[2]
+                    open_price = infoF[5]
+                    high_price = infoF[3]
+                    low_price = infoF[4]
                     time_frame = '1d'
                     #rate = [open_price, high_price, low_price, close_price, 0, 0, 0, time_value_it[0:len(time_value_it)-6], time_value_ny[0:len(time_value_it)-6]]
                     rate = [open_price, high_price, low_price, close_price, 0, 0, 0, time_value_it, time_value_ny]

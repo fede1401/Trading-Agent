@@ -44,8 +44,8 @@ def main(datesToTrade):
         middletitleBetterProfit = []
         middletitleWorseProfit = []
         
-        market = ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']
-        #market = ['larg_comp_eu_actions']
+        #market = ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']
+        market = ['larg_comp_eu_actions']
         for m in market:
             idTest = getLastIdTest(cur)
             insertDataDB.insertInMiddleProfit(idTest, "------", roi=0, devstandard=0, var=0, middleProfitUSD=0,
