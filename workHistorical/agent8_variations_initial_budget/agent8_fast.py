@@ -1,24 +1,50 @@
 # import MetaTrader5 as mt5
 import sys
 
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols')
+#sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
+#sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
+#sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols')
 
-import agentState
-from db import insertDataDB, connectDB
-from utils import generateiRandomDates, getLastIdTest, clearSomeTablesDB
-from symbols import getSector, getSymbols
 import psycopg2
+import random
 import logging
+import pytz
 from datetime import datetime, time, timedelta
 import time as time_module
+import csv
 import math
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import traceback
 import numpy as np
 import time
+
+
+from pathlib import Path
+
+# Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
+current_path = Path(__file__).resolve()
+while current_path.name != 'Trading-Agent':
+    if current_path == current_path.parent:  # Se raggiungiamo la root senza trovare Trading-Agent
+        raise RuntimeError("Errore: Impossibile trovare la cartella Trading-Agent!")
+    current_path = current_path.parent
+
+# Aggiunge la root al sys.path solo se non è già presente
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+
+from config import get_path_specify, market_data_path
+
+# Ora possiamo importare `config`
+get_path_specify(["db", "symbols", "workHistorical", "utils"])
+
+# Importa i moduli personalizzati
+from db import insertDataDB, connectDB
+from symbols import getSymbols
+import agentState
+from utils import getLastIdTest, clearSomeTablesDB
+
+
 
 
 # Funzione principale per il trading e il caricamento
@@ -107,17 +133,19 @@ def main(datesToTrade):
 
                 dizBetterTitle = {}
                 for title in middletitleBetterProfit:
-                    if title in dizBetterTitle:
-                        dizBetterTitle[title] += 1
-                    else:
-                        dizBetterTitle[title] = 1
+                    if title != '':
+                        if title in dizBetterTitle:
+                            dizBetterTitle[title] += 1
+                        else:
+                            dizBetterTitle[title] = 1
 
                 dizWorseTitle = {}
                 for title in middletitleWorseProfit:
-                    if title in dizWorseTitle:
-                        dizWorseTitle[title] += 1
-                    else:
-                        dizWorseTitle[title] = 1
+                    if title != '':
+                        if title in dizWorseTitle:
+                            dizWorseTitle[title] += 1
+                        else:
+                            dizWorseTitle[title] = 1
 
                 mean_titleBetterProfit = max(dizBetterTitle, key=dizBetterTitle.get)
                 mean_titleWorseProfit = max(dizWorseTitle, key=dizWorseTitle.get)
@@ -178,7 +206,7 @@ def getPrices(cur, market, initial_date, endDate):
 
 def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, market, TP, initial_date, endDate):
     # Inizializzazione a ogni iterazione
-    budget = budgetInvestimenti = initial_budget = 5000
+    budget = budgetInvestimenti = initial_budget = 1000
     profitTotalUSD = profitTotalPerc = profitNotReinvested = profitNotReinvestedPerc = ticketPur = ticketSale = budgetMantenimento = nSaleProfit = 0 # equity = margin = 0 
     i = 0  # utilizzata per la scelta del titolo azionario da acquistare
     middleTimeSale = []
@@ -321,7 +349,7 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
 
                     # Calcolo volume e aggiornamento budget
                     # volumeAcq = float(math.floor(10 / price))
-                    volumeAcq = float(10 / price)
+                    volumeAcq = float(5 / price)
                     if volumeAcq == 0:
                         continue
                     ticketPur += 1

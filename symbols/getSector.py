@@ -1,10 +1,48 @@
-import sys
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
-
-from db import connectDB, insertDataDB
+from pathlib import Path
 import csv
 import pandas as pd
+
+"""
+# Percorso assoluto dello script corrente
+project_root = Path(__file__).resolve()
+
+# Risali finché non trovi 'Trading-Agent'
+while project_root.name != 'Trading-Agent':
+    if project_root == project_root.root:  # Se arrivi alla root del file system
+        print("You are not in the right directory")
+        break
+    project_root = project_root.parent  # Risali di un livello
+
+print(f"Project root: {project_root}")  # Debugging
+
+
+sys.path.append(str(project_root) + '/db')  #sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
+sys.path.append(str(project_root))   #sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
+
+
+"""
+
+import sys
+from pathlib import Path
+
+
+# Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
+current_path = Path(__file__).resolve()
+while current_path.name != 'Trading-Agent':
+    if current_path == current_path.parent:  # Se raggiungiamo la root senza trovare Trading-Agent
+        raise RuntimeError("Errore: Impossibile trovare la cartella Trading-Agent!")
+    current_path = current_path.parent
+
+# Aggiunge la root al sys.path solo se non è già presente
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+
+from config import get_path_specify, project_root, marketFiles, market_data_path
+get_path_specify(["db"])
+from db import connectDB, insertDataDB
+
+
+
 
 def getSectorSymbols():
     # Connessione al database
@@ -32,10 +70,10 @@ def getSectorSymbols():
     diz = dict()
 
     # Leggi il file CSV in un DataFrame
-    df = pd.read_csv('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols.csv')
+    df = pd.read_csv(f'{market_data_path}/csv_files/nasdaq_symbols.csv')
 
     # Apri il file CSV in modalità lettura
-    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols.csv', mode='r') as file:
+    with open(f'{market_data_path}/csv_files/nasdaq_symbols.csv', mode='r') as file:
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
 
@@ -84,7 +122,8 @@ def getSectorNasdaq():
     #df = pd.read_csv('../marketData/csv_files/nasdaq_symbols_sorted.csv')
 
     # Apri il file CSV in modalità lettura
-    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols.csv', mode='r') as file:
+    #with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols.csv', mode='r') as file:
+    with open(f'{market_data_path}/csv_files/nasdaq_symbols.csv', mode='r') as file:
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
 
@@ -131,7 +170,7 @@ def getSectorNyse():
     #df = pd.read_csv('../marketData/csv_files/nasdaq_symbols_sorted.csv')
 
     # Apri il file CSV in modalità lettura
-    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nyse_symbols.csv', mode='r') as file:
+    with open(f'{market_data_path}/csv_files/nasdaq_symbols.csv', mode='r') as file:
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
 

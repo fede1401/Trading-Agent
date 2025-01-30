@@ -1,5 +1,6 @@
 # import MetaTrader5 as mt5
 import sys
+"""
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols')
@@ -8,6 +9,8 @@ import agentState
 from db import insertDataDB, connectDB
 from symbols import getSector, getSymbols
 from utils import generateiRandomDates, getLastIdTest, clearSomeTablesDB, getSymbols50PercSect
+"""
+
 import psycopg2
 import random
 import logging
@@ -21,6 +24,32 @@ import pandas as pd
 import traceback
 import numpy as np
 import time
+
+
+from pathlib import Path
+
+# Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
+current_path = Path(__file__).resolve()
+while current_path.name != 'Trading-Agent':
+    if current_path == current_path.parent:  # Se raggiungiamo la root senza trovare Trading-Agent
+        raise RuntimeError("Errore: Impossibile trovare la cartella Trading-Agent!")
+    current_path = current_path.parent
+
+# Aggiunge la root al sys.path solo se non è già presente
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+
+from config import get_path_specify
+
+# Ora possiamo importare `config`
+get_path_specify(["db", "symbols", "workHistorical", "utils"])
+
+# Importa i moduli personalizzati
+from db import insertDataDB, connectDB
+from symbols import getSymbols
+import agentState
+from utils import getLastIdTest, clearSomeTablesDB, getSymbols50PercSect
+
 
 
 # In questo agente andiamo ad investire sul 50% dei titoli a maggiore capitalizzazione per ogni settore del mercato corrispondente.
@@ -115,17 +144,19 @@ def main(datesToTrade, dizNasdaq, dizNyse, perc):
                 
                 dizBetterTitle = {}
                 for title in middletitleBetterProfit:
-                    if title in dizBetterTitle:
-                        dizBetterTitle[title] += 1
-                    else:
-                        dizBetterTitle[title] = 1
+                    if title != '':
+                        if title in dizBetterTitle:
+                            dizBetterTitle[title] += 1
+                        else:
+                            dizBetterTitle[title] = 1
                     
                 dizWorseTitle = {}
                 for title in middletitleWorseProfit:
-                    if title in dizWorseTitle:
-                        dizWorseTitle[title] += 1
-                    else:
-                        dizWorseTitle[title] = 1
+                    if title != '':
+                        if title in dizWorseTitle:
+                            dizWorseTitle[title] += 1
+                        else:
+                            dizWorseTitle[title] = 1
                         
                 mean_titleBetterProfit = max(dizBetterTitle, key=dizBetterTitle.get)
                 mean_titleWorseProfit = max(dizWorseTitle, key=dizWorseTitle.get)
@@ -147,6 +178,7 @@ def main(datesToTrade, dizNasdaq, dizNyse, perc):
         conn.close()
         logging.shutdown()
 
+################################################################################
 
 def getSymbolsDispoible(cur, symbols, market, initial_date, endDate):
     try:
@@ -156,15 +188,15 @@ def getSymbolsDispoible(cur, symbols, market, initial_date, endDate):
         symbolDisp = []
         for sy in cur.fetchall():
             if sy[0] in symbols:
-                if len(symbolDisp) < len(symbols):
-                    symbolDisp.append(sy[0])
+                symbolDisp.append(sy[0])
+                
     except Exception as e:
         logging.critical(f"Errore non gestito: {e}")
         logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
     finally:
         return symbolDisp
 
-
+################################################################################
 
 def getPrices(cur, market, initial_date, endDate):
     try:
@@ -181,7 +213,7 @@ def getPrices(cur, market, initial_date, endDate):
     finally:
         return prices_dict
 
-
+################################################################################
 
 
 def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, market, TP, initial_date, endDate):    
@@ -302,23 +334,25 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
             
             ######################## inizio PURCHASE
             if stateAgent == agentState.AgentState.PURCHASE:   #logging.info(f"Agent entrato nello stato Purchase\n")
-
+                giro = 0
                 numb_purch = 0
-                i = 0
+                #i = 0
 
                 # Acquisto di azioni in modo casuale dal pool di titoli azionari finché c'è budget
                 while budgetInvestimenti > 0:      
                       
                     # Se sono stati visti tutti i titoli azionari e c'è ancora budget per acquistare si ricomincia da capo
-                    if i == len(symbolDisp1):
+                    if giro == len(symbolDisp1):
                         if numb_purch == 0:
                             break
-                        else:
-                            i = 0
-
+                    
+                    if i == len(symbolDisp1):   
+                        i = 0
+                    
                     chosen_symbol = symbolDisp1[i]
                     
                     i += 1
+                    giro += 1
 
                     price_data = prices_dict.get((chosen_symbol, trade_date))
                     if price_data:
@@ -381,8 +415,8 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                     #sales = {int(sale[0]) for sale in cur.fetchall()}
                     
                     # Recupera tutti valori delle colonne degli acquisti nel db.
-                    cur.execute("SELECT * FROM purchase order by now;")
-                    purchasesDB = cur.fetchall()
+                    #cur.execute("SELECT * FROM purchase order by now;")
+                    #purchasesDB = cur.fetchall()
                     
                     # Memorizzo le informazioni relative agli acquisti nelle variabili seguenti:
                     for pur in purchases:

@@ -26,6 +26,7 @@ def connect_nasdaq():
 
 
 # psql -U federico14 -h localhost -d nasdaq
+# psql -U federico -h localhost -d nasdaq3 -p 5433
 
 # Funzione di esempio per connettersi al database 'nasdaq' e eseguire una query di esempio.
 def connectDB_example():

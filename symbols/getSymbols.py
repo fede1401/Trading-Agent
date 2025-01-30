@@ -1,9 +1,30 @@
 
 import pandas as pd
 import csv
+#import sys
+#sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
+#sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData')
+
+
+
 import sys
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData')
+from pathlib import Path
+
+
+# Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
+current_path = Path(__file__).resolve()
+while current_path.name != 'Trading-Agent':
+    if current_path == current_path.parent:  # Se raggiungiamo la root senza trovare Trading-Agent
+        raise RuntimeError("Errore: Impossibile trovare la cartella Trading-Agent!")
+    current_path = current_path.parent
+
+# Aggiunge la root al sys.path solo se non è già presente
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+
+from config import get_path_specify, project_root, marketFiles, market_data_path
+get_path_specify(["db", "marketData"])
+from db import connectDB, insertDataDB
 
 
     
@@ -12,7 +33,7 @@ sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-
 # Funzione per leggere i simboli Nasdaq da un file CSV
 def symbolsNyseCSV():    
     # Apri il file CSV in modalità lettura
-    with open('csv_files/nyse_symbols.csv', mode='r') as file:
+    with open(f'{market_data_path}/csv_files/nyse_symbols.csv', mode='r') as file:
         
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
@@ -38,7 +59,7 @@ def getSymbolsNYSECapDesc():
     diz = dict()
 
     # Leggi il file CSV in un DataFrame
-    df = pd.read_csv('csv_files/nyse_symbols.csv')
+    df = pd.read_csv(f'{market_data_path}/csv_files/nyse_symbols.csv')
 
     # Ordina il DataFrame in base alla colonna 'Market Cap' in ordine decrescente
     df_sorted = df.sort_values(by='Market Cap', ascending=False)
@@ -69,7 +90,7 @@ def getSymbolsNYSECapDesc():
 # Funzione per ottenere i tot simboli della borsa del Nasdaq in ordine di capitalizzazione di mercato decrescente.
 def getSymbolsNasdaq(i):
     # Apri il file CSV in modalità lettura
-    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file: # se dobbiamo utilizzarlo per il file agent1_YAHOO!Finance.py, altrimenti: with open('../marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
+    with open(f'{market_data_path}/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file: # se dobbiamo utilizzarlo per il file agent1_YAHOO!Finance.py, altrimenti: with open('../marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
     #with open('marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file: # se dobbiamo utilizzarlo per il file agent1_YAHOO!Finance.py, altrimenti: with open('../marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
 
 
@@ -88,9 +109,22 @@ def getSymbolsNasdaq(i):
     return symbols
     
     
+def getAllSymbolsNasdaq():
+    # Apri il file CSV in modalità lettura
+    with open(f'{market_data_path}/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file: # se dobbiamo utilizzarlo per il file agent1_YAHOO!Finance.py, altrimenti: with open('../marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
+    #with open('marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file: # se dobbiamo utilizzarlo per il file agent1_YAHOO!Finance.py, altrimenti: with open('../marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
+        # Crea un lettore CSV con DictReader
+        csv_reader = csv.DictReader(file)
+    
+         # Aggiungi ogni simbolo dalla colonna 'Symbol' del CSV alla lista
+        symbols =[col['Symbol'] for col in csv_reader]    
+    # Ritorna la lista dei simboli
+    return symbols
+    
+    
 def getSymbolsNyse(i):
     # Apri il file CSV in modalità lettura
-    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nyse_symbols_sorted.csv', mode='r') as file:
+    with open(f'{market_data_path}/csv_files/nyse_symbols_sorted.csv', mode='r') as file:
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
     
@@ -105,10 +139,23 @@ def getSymbolsNyse(i):
     # Ritorna la lista dei simboli
     return symbols
 
+
+def getAllSymbolsNyse():
+    # Apri il file CSV in modalità lettura
+    with open(f'{market_data_path}/csv_files/nyse_symbols_sorted.csv', mode='r') as file: # se dobbiamo utilizzarlo per il file agent1_YAHOO!Finance.py, altrimenti: with open('../marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
+    #with open('marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file: # se dobbiamo utilizzarlo per il file agent1_YAHOO!Finance.py, altrimenti: with open('../marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
+        # Crea un lettore CSV con DictReader
+        csv_reader = csv.DictReader(file)
+    
+         # Aggiungi ogni simbolo dalla colonna 'Symbol' del CSV alla lista
+        symbols =[col['Symbol'] for col in csv_reader]    
+    # Ritorna la lista dei simboli
+    return symbols
+    
 
 def getSymbolsLargestCompEU(i):
     # Apri il file CSV in modalità lettura
-    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/largest_companies_EU.csv', mode='r') as file:
+    with open(f'{market_data_path}/csv_files/largest_companies_EU.csv', mode='r') as file:
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
     
@@ -122,6 +169,20 @@ def getSymbolsLargestCompEU(i):
                 break
     # Ritorna la lista dei simboli
     return symbols
+    
+    
+def getAllSymbolsLargestCompEU():
+    # Apri il file CSV in modalità lettura
+    with open(f'{market_data_path}/csv_files/largest_companies_EU.csv', mode='r') as file: # se dobbiamo utilizzarlo per il file agent1_YAHOO!Finance.py, altrimenti: with open('../marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
+    #with open('marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file: # se dobbiamo utilizzarlo per il file agent1_YAHOO!Finance.py, altrimenti: with open('../marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
+        # Crea un lettore CSV con DictReader
+        csv_reader = csv.DictReader(file)
+    
+         # Aggiungi ogni simbolo dalla colonna 'Symbol' del CSV alla lista
+        symbols =[col['Symbol'] for col in csv_reader]    
+    # Ritorna la lista dei simboli
+    return symbols
+    
     
     
 
@@ -133,4 +194,5 @@ if __name__ == '__main__':
     #symbols_largCompEU = print(symbolsLargestCompEUCSV())
     #symbolsNyseCSV = print(getSymbolsNYSECapDesc())
     #print(getSymbolsNYSECapDesc())
-    print(getSymbolsLargestCompEU(100))
+    #print(getSymbolsLargestCompEU(100))
+    print(getAllSymbolsNasdaq())

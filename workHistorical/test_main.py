@@ -1,26 +1,55 @@
 import sys
 
+from datetime import datetime
+import csv
+
+#import torch  # PyTorch per calcoli su GPU (se applicabile)
+
+
+
+from pathlib import Path
+
+# Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
+current_path = Path(__file__).resolve()
+while current_path.name != 'Trading-Agent':
+    if current_path == current_path.parent:  # Se raggiungiamo la root senza trovare Trading-Agent
+        raise RuntimeError("Errore: Impossibile trovare la cartella Trading-Agent!")
+    current_path = current_path.parent
+
+# Aggiunge la root al sys.path solo se non è già presente
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+
+import workHistorical.agent2.agent2_markCapDayInitial
+from config import get_path_specify
+
+# Ora possiamo importare `config`
+get_path_specify(["db", "symbols", "workHistorical", "utils"])
+
+# Importa i moduli personalizzati
+from db import connectDB
+
+
+sys.path.append(f'{current_path}/workHistorical')
+sys.path.append(f'{current_path}/workHistorical/agent1_downloadANDinsertDATA_DB')
+sys.path.append(f'{current_path}/workHistorical/agent2')
+sys.path.append(f'{current_path}/workHistorical/agent3')
+sys.path.append(f'{current_path}/workHistorical/agent4')
+sys.path.append(f'{current_path}/workHistorical/agent5_variationNumberTitle')
+sys.path.append(f'{current_path}/workHistorical/agent6_selectionSector')
+sys.path.append(f'{current_path}/workHistorical/agent7_larger_time_window')
+
+
 import agent2.agent2_fast
 import agent2.main_agent2_purchaseALL
 import agent3.agent3_SimulationMulMarket
 import agent3.agent3_fast
 import agent4.agent4_fast
 import agent4.agent4_simulation
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/workHistorical/agent1_downloadANDinsertDATA_DB')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/workHistorical/agent2')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/workHistorical/agent3')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/workHistorical/agent4')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/workHistorical/agent5_variationNumberTitle')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/workHistorical/agent6_selectionSector')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/workHistorical/agent7_larger_time_window')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/workHistorical')
-
 
 import agent2 as agent2
 import agent3 as agent3
 #import agent4 as agent4
-import utils
 import agent5_variationNumberTitle as agent5
 from agent5_variationNumberTitle import main_agent5 as agent5
 from agent6_selectionSector import main_agent6 as agent6
@@ -29,17 +58,8 @@ from agent5_variationNumberTitle.agent5_fast import main as main5
 from agent6_selectionSector.agent6_fast import main as main6
 from agent7_larger_time_window.agent7_fast import main as main7
 from agent8_variations_initial_budget.agent8_fast import main as main8
-import agentState
-from db import insertDataDB, connectDB
-from symbols import getSector, getSymbols
-import logging
-from datetime import datetime, time, timedelta
-import time as time_module
-import csv
-from dateutil.relativedelta import relativedelta
-import pandas as pd
-import numpy as np
-#import torch  # PyTorch per calcoli su GPU (se applicabile)
+
+
 
 
 
@@ -62,6 +82,8 @@ def main():
 
     cur.close()
     conn.close()
+    
+    agent2.agent2_markCapDayPurchase.main(datesToTrade1)
 
     #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     #device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
@@ -71,33 +93,40 @@ def main():
     #data = torch.tensor([1.0, 2.0, 3.0], device=device)
     #result = data * 2  # Operazione GPU
     
-    """
+    
     #agent2.main_agent2_purchaseALL.main(datesToTrade1) # 23:23:27,064 6 gennaio
-    agent2.agent2_fast.main(datesToTrade1) # 11:22:45 ---> 11:45:10 (nasdaq) --> 12:10 (nyse) ---> 12:31 (large)  8 gennaio
+    #agent2.agent2_fast.main(datesToTrade1) # 11:22:45 ---> 11:45:10 (nasdaq) --> 12:10 (nyse) ---> 12:31 (large)  8 gennaio
     ###########################
     #agent3.agent3_SimulationMulMarket.main(datesToTrade1)
-    agent3.agent3_fast.main(datesToTrade1) # 12:31:00 --->  (nasdaq) -->  (nyse) --->  (large)  8 gennaio
+    #agent3.agent3_fast.main(datesToTrade1) # 12:31:00 --->  (nasdaq) -->  (nyse) --->  (large)  8 gennaio
     ###########################
     #agent4.agent4_simulation.main(datesToTrade1)
-    main4(datesToTrade1)
+    #main4(datesToTrade1)
     ###########################
     #agent5.main(datesToTrade1)
-    # agent5.agent5_fast.main(datesToTrade1)
-    main5(datesToTrade1)
+    #agent5.agent5_fast.main(datesToTrade1)
+    #main5(datesToTrade1)
     ###########################
+    
+    
+    cur, conn = connectDB.connect_nasdaq()
     
     dizNasdaq = dict()
     # Apri il file CSV in modalità lettura
-    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
+    with open(f'{current_path}/marketData/csv_files/nasdaq_symbols_sorted.csv', mode='r') as file:
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
+        
+        cur.execute(f"SELECT distinct(symbol) FROM nasdaq_actions;")
+        sy_nasd = [s[0] for s in cur.fetchall()]
 
         # Aggiungi i simboli accettati e il settore di appartenenza al dizionario
         for col in csv_reader:
-            if col['Sector'] not in dizNasdaq:
-                dizNasdaq[col['Sector']] = [col['Symbol']]
-            else:
-                dizNasdaq[col['Sector']].append(col['Symbol'])
+            if col['Symbol'] in sy_nasd:
+                if col['Sector'] not in dizNasdaq:
+                    dizNasdaq[col['Sector']] = [col['Symbol']]
+                else:
+                    dizNasdaq[col['Sector']].append(col['Symbol'])
                 
     #print(dizNasdaq)
     
@@ -112,29 +141,36 @@ def main():
     
     dizNyse = dict()
     # Apri il file CSV in modalità lettura
-    with open('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nyse_symbols_sorted.csv', mode='r') as file:
+    with open(f'{current_path}/marketData/csv_files/nyse_symbols_sorted.csv', mode='r') as file:
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
+        
+        cur.execute(f"SELECT distinct(symbol) FROM nyse_actions;")
+        sy_nys = [s[0] for s in cur.fetchall()]
 
         # Aggiungi i simboli accettati e il settore di appartenenza al dizionario
         for col in csv_reader:
-            if col['Sector'] not in dizNyse:
-                dizNyse[col['Sector']] = [col['Symbol']]
-            else:
-                dizNyse[col['Sector']].append(col['Symbol'])
+            if col['Symbol'] in sy_nys:
+                if col['Sector'] not in dizNyse:
+                    dizNyse[col['Sector']] = [col['Symbol']]
+                else:
+                    dizNyse[col['Sector']].append(col['Symbol'])
                 
     #print(dizNyse)
     
     for sector in dizNyse:
         print(f"{sector}: {len(dizNyse[sector])}\n")
+        
+    cur.close()
+    conn.close()
     
     #agent6.main(datesToTrade1, dizNasdaq, dizNyse, perc=0.3)
     #agent6.agent6_fast.main(datesToTrade1, dizNasdaq, dizNyse, perc=0.3)
-    main6(datesToTrade1, dizNasdaq, dizNyse, perc=0.1)
+    #main6(datesToTrade1, dizNasdaq, dizNyse, perc=0.5)
     
-    main7(datesToTrade1)
-    """
-    main8(datesToTrade1)
+    #main7(datesToTrade1)
+    
+    #main8(datesToTrade1)
     
     print("Fine simulazione")
     return

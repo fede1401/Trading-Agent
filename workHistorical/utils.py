@@ -7,9 +7,6 @@ sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-
 # sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/agent3')
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols')
 
-import agentState
-from db import insertDataDB, connectDB
-from symbols import getSector, getSymbols
 import psycopg2
 import random
 import logging
@@ -24,6 +21,29 @@ import pandas as pd
 import traceback
 import numpy as np
 import time
+
+from pathlib import Path
+
+# Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
+current_path = Path(__file__).resolve()
+while current_path.name != 'Trading-Agent':
+    if current_path == current_path.parent:  # Se raggiungiamo la root senza trovare Trading-Agent
+        raise RuntimeError("Errore: Impossibile trovare la cartella Trading-Agent!")
+    current_path = current_path.parent
+
+# Aggiunge la root al sys.path solo se non è già presente
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+
+from config import get_path_specify
+
+# Ora possiamo importare `config`
+get_path_specify(["db", "symbols"])
+
+# Importa i moduli personalizzati
+import agentState
+from db import insertDataDB, connectDB
+from symbols import getSector, getSymbols
 
 
 # min date for nasdaq and nyse: 1962-01-02 00:00:00 | min date for large: 1972-06-01 00:00:00

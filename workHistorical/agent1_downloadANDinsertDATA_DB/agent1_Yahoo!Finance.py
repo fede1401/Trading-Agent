@@ -5,14 +5,35 @@ import pandas as pd
 #import db.insertDataDB as db, db.connectDB as connectDB
 import logging
 from datetime import datetime, time, timedelta
-import sys
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
-sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols')
-from db import insertDataDB as db, connectDB  as connectDB
+#import sys
+#sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
+#sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
+#sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols')
 
-from symbols import getSymbols as getSymbols
+
+import sys
 from pathlib import Path
+
+# Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
+current_path = Path(__file__).resolve()
+while current_path.name != 'Trading-Agent':
+    if current_path == current_path.parent:  # Se raggiungiamo la root senza trovare Trading-Agent
+        raise RuntimeError("Errore: Impossibile trovare la cartella Trading-Agent!")
+    current_path = current_path.parent
+
+# Aggiunge la root al sys.path solo se non è già presente
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+
+# Ora possiamo importare `config`
+from config import get_path_specify, project_root, marketFiles, market_data_path
+get_path_specify(["db", "marketData", "symbols"])
+
+from db import insertDataDB as db, connectDB  as connectDB
+from symbols import getSymbols as getSymbols
+    
+
+
 
 
 """
@@ -67,21 +88,24 @@ Il codice scarica dati di borsa per una lista di titoli specifici (NASDAQ, NYSE,
 
 def downloadANDSaveStocksData(cur, conn, market):
     if market == 'NASDAQ':
-        symbols = getSymbols.getSymbolsNasdaq(400)
+        #symbols = getSymbols.getSymbolsNasdaq(400)
+        symbols = getSymbols.getAllSymbolsNasdaq()
         #data_dir = Path('./marketData') # ---> ./ per debug
-        data_dir = Path('../../marketData/NASDAQ') # ---> ./ per esecuzione da terminale in path '/agent1'
+        data_dir = Path(f'{market_data_path}/NASDAQ') # ---> ./ per esecuzione da terminale in path '/agent1'
         data_dir.mkdir(exist_ok=True)
         
     elif market == 'NYSE':
-        symbols = getSymbols.getSymbolsNyse(400)
+        #symbols = getSymbols.getSymbolsNyse(400)
+        symbols = getSymbols.getAllSymbolsNyse()
         #data_dir = Path('./marketData/NYSE') # ---> ./ per debug
-        data_dir = Path('../../marketData/NYSE') # ---> ./ per esecuzione da terminale in path '/agent1'
+        data_dir = Path(f'{market_data_path}/NYSE') # ---> ./ per esecuzione da terminale in path '/agent1'
         data_dir.mkdir(exist_ok=True)
         
     elif market == 'LARG_COMP_EU':
-        symbols = getSymbols.getSymbolsLargestCompEU(400)
+        symbols = getSymbols.getAllSymbolsLargestCompEU()
+        #symbols = getSymbols.getSymbolsLargestCompEU(400)
         #data_dir = Path('./marketData/LARG_COMP_EU') # ---> ./ per debug
-        data_dir = Path('../../marketData/LARG_COMP_EU') # ---> ./ per esec
+        data_dir = Path(f'{market_data_path}/LARG_COMP_EU') # ---> ./ per esec
         data_dir.mkdir(exist_ok=True)
     
     for titol in symbols:
@@ -189,7 +213,8 @@ def main():
         
         # download dati
         #downloadANDSaveStocksDataYahooFinanceNASDAQ(cur, conn)
-        market = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
+        #market = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
+        market = ['LARG_COMP_EU']
         for m in market:
             downloadANDSaveStocksData(cur, conn, m)
         #downloadANDSaveStocksData(cur, conn, 'NASDAQ')

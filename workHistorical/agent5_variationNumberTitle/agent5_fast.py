@@ -1,5 +1,6 @@
 # import MetaTrader5 as mt5
 import sys
+"""
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols')
@@ -8,6 +9,8 @@ import agentState
 from db import insertDataDB, connectDB
 from symbols import getSector, getSymbols
 from utils import generateiRandomDates, getLastIdTest, clearSomeTablesDB
+"""
+
 import psycopg2
 import random
 import logging
@@ -22,6 +25,29 @@ import traceback
 import numpy as np
 import time
 
+from pathlib import Path
+
+# Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
+current_path = Path(__file__).resolve()
+while current_path.name != 'Trading-Agent':
+    if current_path == current_path.parent:  # Se raggiungiamo la root senza trovare Trading-Agent
+        raise RuntimeError("Errore: Impossibile trovare la cartella Trading-Agent!")
+    current_path = current_path.parent
+
+# Aggiunge la root al sys.path solo se non è già presente
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+
+from config import get_path_specify
+
+# Ora possiamo importare `config`
+get_path_specify(["db", "symbols", "workHistorical", "utils"])
+
+# Importa i moduli personalizzati
+from db import insertDataDB, connectDB
+from symbols import getSymbols
+import agentState
+from utils import getLastIdTest, clearSomeTablesDB
 
 
 # Funzione principale per il trading e il caricamento
@@ -44,11 +70,11 @@ def main(datesToTrade):
         middletitleBetterProfit = []
         middletitleWorseProfit = []
         
-        list_take_profit = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.20, 0.30, 0.40, 0.50]
+        list_take_profit = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00]
 
         #list_take_profit = [1.00]
         #datesToTrade = generateiRandomDates(cur, 100)
-        iterations = [1,2]
+        iterations = [1,2,3]
 
         for ite in iterations:
             # Inizio elaborazione per i diversi mercati
@@ -66,8 +92,8 @@ def main(datesToTrade):
                         symbols = getSymbols.getSymbolsNasdaq(200)# NASDAQ 200
                     elif ite == 2:
                         symbols = getSymbols.getSymbolsNasdaq(300)
-                    #elif i == 3:
-                    #    symbols = getSymbols.getSymbolsNasdaq(400)
+                    elif i == 3:
+                        symbols = getSymbols.getSymbolsNasdaq(400)
                 
                 elif m == 'nyse_actions':
                     if ite == 0:
@@ -76,8 +102,8 @@ def main(datesToTrade):
                         symbols = getSymbols.getSymbolsNyse(200)
                     elif ite == 2:
                         symbols = getSymbols.getSymbolsNyse(300)
-                    #elif i == 3:
-                    #    symbols = getSymbols.getSymbolsNyse(400)
+                    elif i == 3:
+                        symbols = getSymbols.getSymbolsNyse(400)
                     
                 elif m == 'larg_comp_eu_actions':
                     if ite == 0:
@@ -86,8 +112,8 @@ def main(datesToTrade):
                         symbols = getSymbols.getSymbolsLargestCompEU(200)
                     elif ite == 2:
                         symbols = getSymbols.getSymbolsLargestCompEU(300)
-                    #elif i == 3:
-                    #    symbols = getSymbols.getSymbolsLargestCompEU(400)
+                    elif i == 3:
+                        symbols = getSymbols.getSymbolsLargestCompEU(400)
                     
                 
                 for i in range(len(list_take_profit)):  # Per ogni valore di Take Profit (1%-10%)
@@ -140,17 +166,19 @@ def main(datesToTrade):
                     
                     dizBetterTitle = {}
                     for title in middletitleBetterProfit:
-                        if title in dizBetterTitle:
-                            dizBetterTitle[title] += 1
-                        else:
-                            dizBetterTitle[title] = 1
+                        if title != '':
+                            if title in dizBetterTitle:
+                                dizBetterTitle[title] += 1
+                            else:
+                                dizBetterTitle[title] = 1
                         
                     dizWorseTitle = {}
                     for title in middletitleWorseProfit:
-                        if title in dizWorseTitle:
-                            dizWorseTitle[title] += 1
-                        else:
-                            dizWorseTitle[title] = 1
+                        if title != '':
+                            if title in dizWorseTitle:
+                                dizWorseTitle[title] += 1
+                            else:
+                                dizWorseTitle[title] = 1
                             
                     mean_titleBetterProfit = max(dizBetterTitle, key=dizBetterTitle.get)
                     mean_titleWorseProfit = max(dizWorseTitle, key=dizWorseTitle.get)
@@ -189,21 +217,33 @@ def getSymbolsDispoible(cur, symbols, market, initial_date, endDate, iterationNu
         for sy in cur.fetchall():
             if sy[0] in symbols:
                 if iterationNumber == 0:
-                    if len(symbolDisp) < 100:
-                        if sy[0] in symbols[:100]:
-                            symbolDisp.append(sy[0])
+                    symb100 = symbols[0:100]
+                    if market == 'larg_comp_eu_actions':
+                        symb100 = [sy.split('.')[0] for sy in symb100]
+                    if sy[0] in symb100:
+                        symbolDisp.append(sy[0])
+
                 if iterationNumber == 1:
-                    if len(symbolDisp) < 200:
-                        if sy[0] in symbols[:200]:
-                            symbolDisp.append(sy[0])
+                    symb200 = symbols[0:200]
+                    if market == 'larg_comp_eu_actions':
+                        symb200 = [sy.split('.')[0] for sy in symb200]
+                    if sy[0] in symb200:
+                        symbolDisp.append(sy[0])
+                    
                 if iterationNumber == 2:
-                    if len(symbolDisp) < 300:
-                        if sy[0] in symbols[:300]:
-                            symbolDisp.append(sy[0])
+                    symb300 = symbols[0:300]
+                    if market == 'larg_comp_eu_actions':
+                        symb300 = [sy.split('.')[0] for sy in symb300]
+                    if sy[0] in symb300:
+                        symbolDisp.append(sy[0])
+                            
                 if iterationNumber == 3:
-                    if len(symbolDisp) < 400:
-                        if sy[0] in symbols[:400]:
-                            symbolDisp.append(sy[0])
+                    symb400 = symbols[0:400]
+                    if market == 'larg_comp_eu_actions':
+                        symb400 = [sy.split('.')[0] for sy in symb400]
+                    if sy[0] in symb400:
+                        symbolDisp.append(sy[0])
+                            
     except Exception as e:
         logging.critical(f"Errore non gestito: {e}")
         logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
@@ -355,23 +395,29 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
             if stateAgent == agentState.AgentState.PURCHASE:   #logging.info(f"Agent entrato nello stato Purchase\n")
 
                 numb_purch = 0
-                i = 0
+                #i = 0
+                giro = 0
 
                 # Acquisto di azioni in modo casuale dal pool di titoli azionari finché c'è budget
                 while budgetInvestimenti > 0:      
                       
                     # Se sono stati visti tutti i titoli azionari e c'è ancora budget per acquistare si ricomincia da capo
-                    if i == len(symbolDisp1):
+                    if giro == len(symbolDisp1):
                         if numb_purch == 0:
                             break
-                        else:
-                            i = 0
+                    
+                    if i == len(symbolDisp1):   
+                        i = 0
 
                     chosen_symbol = symbolDisp1[i]
                     
                     i += 1
+                    giro += 1
                     
                     price_data = prices_dict.get((chosen_symbol, trade_date))
+                    if price_data == None:
+                        continue
+                
                     if price_data:
                         price, _ = price_data
 
@@ -393,6 +439,7 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
 
                         # Inserimento nel database
                         insertDataDB.insertInPurchase(trade_date, ticketPur, volumeAcq, chosen_symbol, price, cur, conn)
+                        numb_purch += 1
                         budgetInvestimenti -= (price * volumeAcq)
                         
                         purchases.add((dateObject, ticketPur, volumeAcq, chosen_symbol, price))
@@ -431,8 +478,8 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                     #sales = {int(sale[0]) for sale in cur.fetchall()}
                     
                     # Recupera tutti valori delle colonne degli acquisti nel db.
-                    cur.execute("SELECT * FROM purchase order by now;")
-                    purchasesDB = cur.fetchall()
+                    #cur.execute("SELECT * FROM purchase order by now;")
+                    #purchasesDB = cur.fetchall()
                     
                     # Memorizzo le informazioni relative agli acquisti nelle variabili seguenti:
                     for pur in purchases:
@@ -529,10 +576,12 @@ if __name__ == "__main__":
     # Connessione al database
     cur, conn = connectDB.connect_nasdaq()
     #datesToTrade = generateiRandomDates(cur, 100)
+    datesToTrade1 = [('1999-06-24 00:00:00', datetime(1999, 6, 24, 0, 0), '2000-06-24 00:00:00'), ('1999-07-16 00:00:00', datetime(1999, 7, 16, 0, 0), '2000-07-16 00:00:00'), ('1999-09-08 00:00:00', datetime(1999, 9, 8, 0, 0), '2000-09-08 00:00:00'), ('2001-08-08 00:00:00', datetime(2001, 8, 8, 0, 0), '2002-08-08 00:00:00'), ('2001-09-24 00:00:00', datetime(2001, 9, 24, 0, 0), '2002-09-24 00:00:00'), ('2001-09-24 00:00:00', datetime(2001, 9, 24, 0, 0), '2002-09-24 00:00:00'), ('2002-11-01 00:00:00', datetime(2002, 11, 1, 0, 0), '2003-11-01 00:00:00'), ('2002-11-18 00:00:00', datetime(2002, 11, 18, 0, 0), '2003-11-18 00:00:00'), ('2004-01-09 00:00:00', datetime(2004, 1, 9, 0, 0), '2005-01-09 00:00:00'), ('2004-08-18 00:00:00', datetime(2004, 8, 18, 0, 0), '2005-08-18 00:00:00'), ('2006-11-02 00:00:00', datetime(2006, 11, 2, 0, 0), '2007-11-02 00:00:00'), ('2006-11-15 00:00:00', datetime(2006, 11, 15, 0, 0), '2007-11-15 00:00:00'), ('2007-10-22 00:00:00', datetime(2007, 10, 22, 0, 0), '2008-10-22 00:00:00'), ('2008-12-05 00:00:00', datetime(2008, 12, 5, 0, 0), '2009-12-05 00:00:00'), ('2009-04-16 00:00:00', datetime(2009, 4, 16, 0, 0), '2010-04-16 00:00:00'), ('2009-10-20 00:00:00', datetime(2009, 10, 20, 0, 0), '2010-10-20 00:00:00'), ('2009-11-23 00:00:00', datetime(2009, 11, 23, 0, 0), '2010-11-23 00:00:00'), ('2010-07-16 00:00:00', datetime(2010, 7, 16, 0, 0), '2011-07-16 00:00:00'), ('2011-06-09 00:00:00', datetime(2011, 6, 9, 0, 0), '2012-06-09 00:00:00'), ('2011-07-28 00:00:00', datetime(2011, 7, 28, 0, 0), '2012-07-28 00:00:00'), ('2011-09-20 00:00:00', datetime(2011, 9, 20, 0, 0), '2012-09-20 00:00:00'), ('2012-11-19 00:00:00', datetime(2012, 11, 19, 0, 0), '2013-11-19 00:00:00'), ('2012-12-20 00:00:00', datetime(2012, 12, 20, 0, 0), '2013-12-20 00:00:00'), ('2013-03-01 00:00:00', datetime(2013, 3, 1, 0, 0), '2014-03-01 00:00:00'), ('2013-06-28 00:00:00', datetime(2013, 6, 28, 0, 0), '2014-06-28 00:00:00'), ('2013-08-12 00:00:00', datetime(2013, 8, 12, 0, 0), '2014-08-12 00:00:00'), ('2014-01-13 00:00:00', datetime(2014, 1, 13, 0, 0), '2015-01-13 00:00:00'), ('2014-01-21 00:00:00', datetime(2014, 1, 21, 0, 0), '2015-01-21 00:00:00'), ('2014-01-30 00:00:00', datetime(2014, 1, 30, 0, 0), '2015-01-30 00:00:00'), ('2015-03-04 00:00:00', datetime(2015, 3, 4, 0, 0), '2016-03-04 00:00:00'), ('2015-03-13 00:00:00', datetime(2015, 3, 13, 0, 0), '2016-03-13 00:00:00'), ('2015-03-16 00:00:00', datetime(2015, 3, 16, 0, 0), '2016-03-16 00:00:00'), ('2015-03-26 00:00:00', datetime(2015, 3, 26, 0, 0), '2016-03-26 00:00:00'), ('2015-04-28 00:00:00', datetime(2015, 4, 28, 0, 0), '2016-04-28 00:00:00'), ('2015-05-14 00:00:00', datetime(2015, 5, 14, 0, 0), '2016-05-14 00:00:00'), ('2015-09-15 00:00:00', datetime(2015, 9, 15, 0, 0), '2016-09-15 00:00:00'), ('2016-02-23 00:00:00', datetime(2016, 2, 23, 0, 0), '2017-02-23 00:00:00'), ('2016-03-18 00:00:00', datetime(2016, 3, 18, 0, 0), '2017-03-18 00:00:00'), ('2016-04-06 00:00:00', datetime(2016, 4, 6, 0, 0), '2017-04-06 00:00:00'), ('2016-10-06 00:00:00', datetime(2016, 10, 6, 0, 0), '2017-10-06 00:00:00'), ('2017-02-15 00:00:00', datetime(2017, 2, 15, 0, 0), '2018-02-15 00:00:00'), ('2017-03-15 00:00:00', datetime(2017, 3, 15, 0, 0), '2018-03-15 00:00:00'), ('2017-05-01 00:00:00', datetime(2017, 5, 1, 0, 0), '2018-05-01 00:00:00'), ('2017-08-14 00:00:00', datetime(2017, 8, 14, 0, 0), '2018-08-14 00:00:00'), ('2017-08-15 00:00:00', datetime(2017, 8, 15, 0, 0), '2018-08-15 00:00:00'), ('2017-08-16 00:00:00', datetime(2017, 8, 16, 0, 0), '2018-08-16 00:00:00'), ('2017-10-30 00:00:00', datetime(2017, 10, 30, 0, 0), '2018-10-30 00:00:00'), ('2018-02-14 00:00:00', datetime(2018, 2, 14, 0, 0), '2019-02-14 00:00:00'), ('2018-03-29 00:00:00', datetime(2018, 3, 29, 0, 0), '2019-03-29 00:00:00'), ('2018-05-14 00:00:00', datetime(2018, 5, 14, 0, 0), '2019-05-14 00:00:00'), ('2018-06-04 00:00:00', datetime(2018, 6, 4, 0, 0), '2019-06-04 00:00:00'), ('2018-08-09 00:00:00', datetime(2018, 8, 9, 0, 0), '2019-08-09 00:00:00'), ('2019-03-14 00:00:00', datetime(2019, 3, 14, 0, 0), '2020-03-14 00:00:00'), ('2019-05-03 00:00:00', datetime(2019, 5, 3, 0, 0), '2020-05-03 00:00:00'), ('2019-05-17 00:00:00', datetime(2019, 5, 17, 0, 0), '2020-05-17 00:00:00'), ('2019-06-17 00:00:00', datetime(2019, 6, 17, 0, 0), '2020-06-17 00:00:00'), ('2019-06-27 00:00:00', datetime(2019, 6, 27, 0, 0), '2020-06-27 00:00:00'), ('2020-01-10 00:00:00', datetime(2020, 1, 10, 0, 0), '2021-01-10 00:00:00'), ('2020-01-31 00:00:00', datetime(2020, 1, 31, 0, 0), '2021-01-31 00:00:00'), ('2020-03-27 00:00:00', datetime(2020, 3, 27, 0, 0), '2021-03-27 00:00:00'), ('2020-05-26 00:00:00', datetime(2020, 5, 26, 0, 0), '2021-05-26 00:00:00'), ('2020-05-27 00:00:00', datetime(2020, 5, 27, 0, 0), '2021-05-27 00:00:00'), ('2020-08-05 00:00:00', datetime(2020, 8, 5, 0, 0), '2021-08-05 00:00:00'), ('2020-08-17 00:00:00', datetime(2020, 8, 17, 0, 0), '2021-08-17 00:00:00'), ('2020-09-11 00:00:00', datetime(2020, 9, 11, 0, 0), '2021-09-11 00:00:00'), ('2020-10-21 00:00:00', datetime(2020, 10, 21, 0, 0), '2021-10-21 00:00:00'), ('2021-02-10 00:00:00', datetime(2021, 2, 10, 0, 0), '2022-02-10 00:00:00'), ('2021-03-30 00:00:00', datetime(2021, 3, 30, 0, 0), '2022-03-30 00:00:00'), ('2021-04-14 00:00:00', datetime(2021, 4, 14, 0, 0), '2022-04-14 00:00:00'), ('2021-07-08 00:00:00', datetime(2021, 7, 8, 0, 0), '2022-07-08 00:00:00'), ('2021-08-11 00:00:00', datetime(2021, 8, 11, 0, 0), '2022-08-11 00:00:00'), ('2021-08-12 00:00:00', datetime(2021, 8, 12, 0, 0), '2022-08-12 00:00:00'), ('2021-08-18 00:00:00', datetime(2021, 8, 18, 0, 0), '2022-08-18 00:00:00'), ('2021-10-28 00:00:00', datetime(2021, 10, 28, 0, 0), '2022-10-28 00:00:00'), ('2021-11-04 00:00:00', datetime(2021, 11, 4, 0, 0), '2022-11-04 00:00:00'), ('2021-11-04 00:00:00', datetime(2021, 11, 4, 0, 0), '2022-11-04 00:00:00'), ('2021-11-11 00:00:00', datetime(2021, 11, 11, 0, 0), '2022-11-11 00:00:00'), ('2021-12-28 00:00:00', datetime(2021, 12, 28, 0, 0), '2022-12-28 00:00:00'), ('2022-01-07 00:00:00', datetime(2022, 1, 7, 0, 0), '2023-01-07 00:00:00'), ('2022-02-08 00:00:00', datetime(2022, 2, 8, 0, 0), '2023-02-08 00:00:00'), ('2022-04-04 00:00:00', datetime(2022, 4, 4, 0, 0), '2023-04-04 00:00:00'), ('2022-05-10 00:00:00', datetime(2022, 5, 10, 0, 0), '2023-05-10 00:00:00'), ('2022-05-26 00:00:00', datetime(2022, 5, 26, 0, 0), '2023-05-26 00:00:00'), ('2022-06-15 00:00:00', datetime(2022, 6, 15, 0, 0), '2023-06-15 00:00:00'), ('2022-06-21 00:00:00', datetime(2022, 6, 21, 0, 0), '2023-06-21 00:00:00'), ('2022-10-17 00:00:00', datetime(2022, 10, 17, 0, 0), '2023-10-17 00:00:00'), ('2022-12-29 00:00:00', datetime(2022, 12, 29, 0, 0), '2023-12-29 00:00:00'), ('2023-01-09 00:00:00', datetime(2023, 1, 9, 0, 0), '2024-01-09 00:00:00'), ('2023-01-20 00:00:00', datetime(2023, 1, 20, 0, 0), '2024-01-20 00:00:00'), ('2023-03-03 00:00:00', datetime(2023, 3, 3, 0, 0), '2024-03-03 00:00:00'), ('2023-03-10 00:00:00', datetime(2023, 3, 10, 0, 0), '2024-03-10 00:00:00'), ('2023-03-22 00:00:00', datetime(2023, 3, 22, 0, 0), '2024-03-22 00:00:00'), ('2023-04-13 00:00:00', datetime(2023, 4, 13, 0, 0), '2024-04-13 00:00:00'), ('2023-04-20 00:00:00', datetime(2023, 4, 20, 0, 0), '2024-04-20 00:00:00'), ('2023-04-28 00:00:00', datetime(2023, 4, 28, 0, 0), '2024-04-28 00:00:00'), ('2023-05-24 00:00:00', datetime(2023, 5, 24, 0, 0), '2024-05-24 00:00:00'), ('2023-08-15 00:00:00', datetime(2023, 8, 15, 0, 0), '2024-08-15 00:00:00'), ('2023-08-24 00:00:00', datetime(2023, 8, 24, 0, 0), '2024-08-24 00:00:00'), ('2023-09-08 00:00:00', datetime(2023, 9, 8, 0, 0), '2024-09-08 00:00:00'), ('2023-10-25 00:00:00', datetime(2023, 10, 25, 0, 0), '2024-10-25 00:00:00')]
+
     
     cur.close()
     conn.close()
 
-    #main(datesToTrade)
+    main(datesToTrade1)
 
 

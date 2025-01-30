@@ -1,5 +1,6 @@
 # import MetaTrader5 as mt5
 import sys
+"""
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent')
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/db')
 sys.path.append('/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/symbols')
@@ -8,6 +9,8 @@ import agentState
 from db import insertDataDB, connectDB
 from symbols import getSector, getSymbols
 from utils import generateiRandomDates, getLastIdTest, clearSomeTablesDB, getSymbols50PercSect
+"""
+
 import psycopg2
 import random
 import logging
@@ -23,8 +26,33 @@ import numpy as np
 import time
 
 
-# In questo agente andiamo ad investire sul 50% dei titoli a maggiore capitalizzazione per ogni settore del mercato corrispondente.
+from pathlib import Path
 
+# Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
+current_path = Path(__file__).resolve()
+while current_path.name != 'Trading-Agent':
+    if current_path == current_path.parent:  # Se raggiungiamo la root senza trovare Trading-Agent
+        raise RuntimeError("Errore: Impossibile trovare la cartella Trading-Agent!")
+    current_path = current_path.parent
+
+# Aggiunge la root al sys.path solo se non è già presente
+if str(current_path) not in sys.path:
+    sys.path.append(str(current_path))
+
+from config import get_path_specify
+
+# Ora possiamo importare `config`
+get_path_specify(["db", "symbols", "workHistorical", "utils"])
+
+# Importa i moduli personalizzati
+from db import insertDataDB, connectDB
+from symbols import getSymbols
+import agentState
+from utils import getLastIdTest, clearSomeTablesDB, getSymbols50PercSect
+
+
+
+# In questo agente andiamo ad investire sul 50% dei titoli a maggiore capitalizzazione per ogni settore del mercato corrispondente.
 
 # Funzione principale per il trading e il caricamento
 def main(datesToTrade, dizNasdaq, dizNyse, perc):
