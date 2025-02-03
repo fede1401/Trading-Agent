@@ -67,7 +67,7 @@ def main(datesToTrade, dizNasdaq, dizNyse, perc):
         # Inserimento dati del login
         #insertDataDB.insertInLoginDate("Federico Ferdinandi", "federico", "TickmillEU-Demo", cur, conn)
         
-        roi = []
+        profitsPerc = []
         profTot = []
         middleSale = []
         middlePurchase= []
@@ -96,7 +96,7 @@ def main(datesToTrade, dizNasdaq, dizNyse, perc):
                 symbols = getSymbols.getSymbolsLargestCompEU(350)
             
             for i in range(len(list_take_profit)):  # Per ogni valore di Take Profit (1%-10%)
-                roi = []
+                profitsPerc = []
                 profTot = []
                 middleSale = []
                 middlePurchase= []
@@ -125,7 +125,7 @@ def main(datesToTrade, dizNasdaq, dizNyse, perc):
                                                  titleBetterProfit=titleBetterProfit, titleWorseProfit=titleWorseProfit, notes=f"TAKE PROFIT = {TK}% ", cur=cur, conn=conn)
                     
                     profTot.append(profitUSD)
-                    roi.append(profitPerc)
+                    profitsPerc.append(profitPerc)
                     middleSale.append(nSale)
                     middlePurchase.append(nPurchase)
                     MmiddleTimeSale.append(middleTimeSale)
@@ -134,9 +134,9 @@ def main(datesToTrade, dizNasdaq, dizNyse, perc):
                 
 
                 # Calcolo delle statistiche
-                mean_profit_perc = round(float(np.mean(roi)), 4)
-                std_deviation = round(float(np.std(roi)), 4)
-                varianza = round(float(np.var(roi)), 4)
+                mean_profit_perc = round(float(np.mean(profitsPerc)), 4)
+                std_deviation = round(float(np.std(profitsPerc)), 4)
+                varianza = round(float(np.var(profitsPerc)), 4)
                 mean_profit_usd = round(float(np.mean(profTot)), 4)
                 mean_sale = round(float(np.mean(middleSale)), 4)
                 mean_purchase = round(float(np.mean(middlePurchase)), 4)

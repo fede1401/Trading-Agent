@@ -151,3 +151,70 @@
 
 
 
+-----------
+
+-- 31 gennaio 2025:
+-- select symbol, time_value_it, open_price, high_price, low_price, close_price from nasdaq_actions where symbol='AAPL' and time_value_it between '2021-12-20 00:00:00' and '2022-01-07 00:00:00';
+--select * from middleprofit;
+
+-- SELECT symbol, time_value_it, open_price, high_price, low_price, close_price  FROM nasdaq_actions  WHERE symbol = 'AAPL' AND CAST(close_price AS TEXT) LIKE '182%';
+
+--select * from nasdaq_actions LIMIT 1000;
+
+-- select * from middleProfit where agent='agent2';
+
+--select symbol, time_value_it, open_price, high_price, low_price, close_price from nasdaq_actions where symbol='REGN' and time_value_it between '2019-06-17 00:00:00' and '2020-06-17 00:00:00';
+
+--select testid, agent, roi, profitusd, var, devstand, middpurch, middsale, middtimesale, middtitlebettprof, middletiteworseprof, notes from middleProfit where agent='agent2' or agent='------';
+
+-- select sum(profit_usd) from sale;
+-- select * from sale;
+
+-- select * from nasdaq_actions where symbol='EQIX' and time_value_it between '2011-09-20 00:00:00' and '2012-07-26 00:00:00';
+
+-- select * from middleprofit where notes = 'TP:0.01%, nasdaq_actions, buy no randomly but one after the other' order by testid desc;
+-- select * from sale;
+-- select * from testing;
+
+-- select * from middleprofit order by testid desc;
+
+--select * from testing where id = '102';
+
+--select distinct(symbol) from nasdaq_actions;
+
+--select * from larg_comp_eu_actions where symbol='COLR.BR';
+
+--select distinct(symbol) from larg_comp_eu_actions;
+
+--select count(*) from nasdaq_actions;
+
+--2108338
+--2148609
+
+
+--select testid, agent, roi, notes from middleprofit order by testid;
+
+-- select * from middleprofit order by testid;
+
+--delete from middleprofit where testid= 284 and agent = '------';
+--  select distinct(symbol) from purchase;
+
+-- delete from middleprofit where agent = 'agent5';
+-- select * from testing;
+--delete from testing where agent ='agent5';
+
+
+-- select distinct(symbol) from larg_comp_eu_actions;
+
+
+-- select * from nasdaq_actions limit 100;
+
+-- select count(*) from nasdaq_actions;
+
+-- select * from nasdaq_actions where symbol='GT' and time_value_it between '1999-06-24 00:00:00' and '2000-06-24 00:00:00' ;
+
+-- select * from testing order by id desc;
+
+-- select * from testing where id>=599 order by numbertest ;
+
+-- select * from middleprofit order by testid desc;

@@ -191,10 +191,13 @@ import csv
 import os
 import time
 #from pathlib import Path
+import pandas as pd
+from heapq import nlargest
 
 import sys
 from pathlib import Path
-
+import logging
+import traceback
 
 # Trova dinamicamente la cartella Trading-Agent e la aggiunge al path
 current_path = Path(__file__).resolve()
@@ -213,18 +216,25 @@ from config import get_path_specify, project_root, marketFiles, market_data_path
 #get_path_specify(["marketData", "csv_files", "marketCap"])
 
 
-
-
-
 #marketFiles = [#'/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nasdaq_symbols_sorted.csv', 
 #               '/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/nyse_symbols_sorted.csv',
 #               '/Users/federico/Documents/Tesi informatica/programming/Trading-Agent/marketData/csv_files/largest_companies_EU.csv'
 #               ]
 
 
-
-
 def getMarkCap(marketFiles):
+    
+    market = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
+    for mark in market:
+        if Path(f"{market_data_path}/csv_files/marketCap/{mark}").exists():
+            print(f"La cartella marketCap/{mark} esiste già")
+            continue
+        else:
+            print(f"La cartella marketCap/{mark} non esiste")
+            # Creo la cartella
+            os.mkdir(f"{market_data_path}/csv_files/marketCap/{mark}")
+    
+    #os.mkdir(f"{market_data_path}/csv_files/marketCap/NASDAQ")
     
     for fmark in marketFiles:
         fmark = str(fmark)
@@ -279,7 +289,7 @@ def getMarkCap(marketFiles):
                 historical_data[["Close", "Market Cap"]].to_csv(f"{market_data_path}/csv_files/marketCap/NASDAQ/market_cap_{sy}.csv")
                 print(f"Dati salvati in market_cap_{sy}.csv")
                 
-            elif fmark == f'{market_data_path}market_data_path/csv_files/nyse_symbols_sorted.csv':
+            elif fmark == f'{market_data_path}/csv_files/nyse_symbols_sorted.csv':
                 historical_data[["Close", "Market Cap"]].to_csv(f"{market_data_path}/csv_files/marketCap/NYSE/market_cap_{sy}.csv")
                 print(f"Dati salvati in market_cap_{sy}.csv")
                 
@@ -287,7 +297,7 @@ def getMarkCap(marketFiles):
                 historical_data[["Close", "Market Cap"]].to_csv(f"{market_data_path}/csv_files/marketCap/LARG_COMP_EU/market_cap_{sy}.csv")
                 print(f"Dati salvati in market_cap_{sy}.csv")
             
-            time.sleep(0.3)
+            time.sleep(0.5)
 
             # Mostra i primi valori
             #print(historical_data[["Close", "Market Cap"]].head())
@@ -298,7 +308,7 @@ def orderMarkCapYears():
     market = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
     year = ['1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
     
-    yearFile = ['1999.csv', '2000.csv', '2001.csv', '2002.csv', '2003.csv', '2004.csv', '2005.csv', '2006.csv', '2007.csv', '2008.csv', '2009.csv', '2010.csv', '2011.csv', '2012.csv', '2013.csv', '2014.csv', '2015.csv', '2016.csv', '2017.csv', '2018.csv', '2019.csv', '2020.csv', '2021.csv', '2022.csv', '2023.csv']
+    yearFile = ['1999.csv', '2000.csv', '2001.csv', '2002.csv', '2003.csv', '2004.csv', '2005.csv', '2006.csv', '2007.csv', '2008.csv', '2009.csv', '2010.csv', '2011.csv', '2012.csv', '2013.csv', '2014.csv', '2015.csv', '2016.csv', '2017.csv', '2018.csv', '2019.csv', '2020.csv', '2021.csv', '2022.csv', '2023.csv', '2024.csv']
     
     countNasd = countNys = countEur = 0
     
@@ -328,7 +338,8 @@ def orderMarkCapYears():
                 for row in csv_reader:
                     
                     for d in ['1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010',
-                            '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']:
+                            '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024']:
+                    #for d in ['2024']:
                         
                         v = row['Date'].split('-')[0]
                         if v == d:
@@ -343,6 +354,169 @@ def orderMarkCapYears():
         i = 0
 
 
+
+
+"""
+
+def preprocess_topX_for_year():
+    topValue = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+    markets = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
+    
+    try:
+        for m in markets:
+            df_total = pd.DataFrame()  # DataFrame aggregato per l'anno
+            
+            for f in os.listdir(f"{project_root}/marketData/csv_files/marketCap/{m}"):
+                if f == '.DS_Store':
+                    continue
+                
+                year = int(f.split('.')[0])
+                
+                filepath = f"{project_root}/marketData/csv_files/marketCap/{m}/{f}"
+                df = pd.read_csv(filepath)
+
+                # Converti date con gestione errori
+                df['date'] = pd.to_datetime(df['date'], utc=True, errors='coerce')
+                print(f"File {f}: {df['date'].isna().sum()} date non parseabili")
+
+                # Filtra solo le righe di quell'anno
+                df_year = df[df['date'].dt.year == year]
+                print(f"Anno {year}: {df_year.shape[0]} righe trovate dopo il filtro")
+                
+                # Se non ci sono dati, salta il file
+                if df_year.empty:
+                    continue
+                
+                df_total = pd.concat([df_total, df_year], ignore_index=True)
+
+            # Se non ci sono dati per quell'anno, esci
+            if df_total.empty:
+                print(f"Nessun dato valido per l'anno {year}.")
+                continue
+
+            for value in topValue:
+                # Raggruppa per data ed estrai i top X titoli per market_cap
+                topX_by_date = (
+                    df_total
+                    .groupby('date', group_keys=True)
+                    .apply(lambda g: g.nlargest(value, 'market_cap') if len(g) >= value else g)
+                )
+
+                output_path = f"{project_root}/marketData/csv_files/marketCap/{m}/top{value}_{year}.csv"
+                
+                # Scrittura evitando sovrascritture
+                topX_by_date.to_csv(output_path, mode='w', header=True)
+
+    except Exception as e:
+        logging.critical(f"Errore non gestito: {e}")
+        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+    
+    finally:
+        logging.info(f"Preprocessing {year} completato.")
+
+"""
+
+
+
+def deleteFilesAboutSingleTitles():
+    markets = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
+    yearFile = ['1999.csv', '2000.csv', '2001.csv', '2002.csv', '2003.csv', '2004.csv', '2005.csv', '2006.csv', '2007.csv', '2008.csv', '2009.csv', '2010.csv', '2011.csv', '2012.csv', '2013.csv', '2014.csv', '2015.csv', '2016.csv', '2017.csv', '2018.csv', '2019.csv', '2020.csv', '2021.csv', '2022.csv', '2023.csv', '2024.csv']
+
+    for m in markets:
+        for f in os.listdir(f"{project_root}/marketData/csv_files/marketCap/{m}"):
+            if f not in yearFile:
+                os.remove(f"{project_root}/marketData/csv_files/marketCap/{m}/{f}")
+    
+    return 0
+
+
+"""
+def preprocess_topX_for_year():
+    # Preprocess topX per ogni anno
+    topValue = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+    markets = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
+    try:
+        for m in markets:
+            for f in os.listdir(f"{project_root}/marketData/csv_files/marketCap/{m}"):
+                if f == '.DS_Store' or f.startswith("top"):
+                    continue
+                
+                with open(f"{project_root}/marketData/csv_files/marketCap/{m}/{f}", mode='r') as file:
+                    dates = {}
+                    for row in file:
+                        if row == 'symbol,date,market_cap\n':
+                            continue
+                        symb, date, mrkcap = row.split(',')
+                        
+                        if date not in dates.keys():
+                            dates[date] = [(symb, float(mrkcap.replace('\n', '')))]
+                        else:
+                            dates[date].append((symb, float(mrkcap.replace('\n', ''))))
+                            
+                    dates = {k: sorted(v, key=lambda x: x[1], reverse=True) for k, v in dates.items()}  # corretto ordinamento
+                    
+                    year = f.split('.')[0]
+                    
+                    with open(f"{project_root}/marketData/csv_files/marketCap/{m}/topVal{year}.csv", mode='w') as file:
+                        fieldnames = ['date', 'symb-markCap']
+                        writer = csv.DictWriter(file, fieldnames=fieldnames)
+                        #writer.writeheader()
+                        writer.writerows(dates)
+"""
+             
+
+def preprocess_topX_for_year():
+    # Preprocess topX per ogni anno
+    markets = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
+    
+    try:
+        for m in markets:
+            for f in os.listdir(f"{project_root}/marketData/csv_files/marketCap/{m}"):
+                if f == '.DS_Store' or f.startswith("top"):
+                    continue
+                
+                with open(f"{project_root}/marketData/csv_files/marketCap/{m}/{f}", mode='r') as file:
+                    dates = {}
+                    for row in file:
+                        if row.strip() == 'symbol,date,market_cap':  # Ignora l'header
+                            continue
+                        symb, date, mrkcap = row.strip().split(',')
+                        
+                        if date not in dates:
+                            dates[date] = [(symb, float(mrkcap))]
+                        else:
+                            dates[date].append((symb, float(mrkcap)))
+                    
+                    # Ordina per market cap decrescente
+                    dates = {k: sorted(v, key=lambda x: x[1], reverse=True) for k, v in dates.items()}
+                    
+                    # Converti in lista di dizionari
+                    rows = []
+                    for date, values in dates.items():
+                        symbol_market_cap_str = "; ".join([f"{symb[0]}" for symb in values])  # Converti lista in stringa
+                        rows.append({'date': date, 'symb': symbol_market_cap_str})
+                    
+                    # Scrivi nel CSV
+                    year = f.split('.')[0]
+                    output_path = f"{project_root}/marketData/csv_files/marketCap/{m}/topVal{year}.csv"
+                    
+                    with open(output_path, mode='w', newline='') as file:
+                        fieldnames = ['date', 'symb']
+                        writer = csv.DictWriter(file, fieldnames=fieldnames)
+                        writer.writeheader()
+                        writer.writerows(rows)  # Ora è nel formato corretto!
+        
+    except Exception as e:
+        logging.critical(f"Errore non gestito: {e}")
+        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+        
+    finally:
+        logging.info(f"Preprocessing completato.")
+
+
+
+
+
 if __name__ == '__main__':
     
         
@@ -355,6 +529,15 @@ if __name__ == '__main__':
     #               f"{project_root}/marketData/csv_files/nyse_symbols_sorted.csv",
     #               f"{project_root}/marketData/csv_files/largest_companies_EU.csv"
     #              ]
-
+    
+    marketFiles = [f"{project_root}/marketData/csv_files/nasdaq_symbols_sorted.csv",
+                   f"{project_root}/marketData/csv_files/nyse_symbols_sorted.csv",
+                f"{project_root}/marketData/csv_files/largest_companies_EU.csv"]
+    
     #getMarkCap(marketFiles)
-    orderMarkCapYears()
+    #orderMarkCapYears()
+    #deleteFilesAboutSingleTitles()
+    #year = ['1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
+    #for y in year:
+    preprocess_topX_for_year()
+    #preprocess_top100_for_year()

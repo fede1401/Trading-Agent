@@ -38,7 +38,7 @@ while current_path.name != 'Trading-Agent':
 if str(current_path) not in sys.path:
     sys.path.append(str(current_path))
 
-from config import get_path_specify
+from config import get_path_specify, market_data_path
 
 # Ora possiamo importare `config`
 get_path_specify(["db", "symbols", "workHistorical", "utils"])
@@ -62,7 +62,7 @@ def main(datesToTrade):
         # Inserimento dati del login
         #insertDataDB.insertInLoginDate("Federico Ferdinandi", "federico", "TickmillEU-Demo", cur, conn)
         
-        roi = []
+        profitsPerc = []
         profTot = []
         middleSale = []
         middlePurchase= []
@@ -74,7 +74,7 @@ def main(datesToTrade):
 
         #list_take_profit = [1.00]
         #datesToTrade = generateiRandomDates(cur, 100)
-        iterations = [1,2,3]
+        iterations = [1,2,3,4,5,6,7,8,9,10]
 
         for ite in iterations:
             # Inizio elaborazione per i diversi mercati
@@ -86,38 +86,16 @@ def main(datesToTrade):
                                                   middletitleBetterProfit='----',
                                                   middletitleWorseProfit=0, notes='---', cur=cur, conn=conn)
                 if m == 'nasdaq_actions':
-                    if ite == 0:
-                        symbols = getSymbols.getSymbolsNasdaq(100)# NASDAQ 100
-                    elif ite == 1:
-                        symbols = getSymbols.getSymbolsNasdaq(200)# NASDAQ 200
-                    elif ite == 2:
-                        symbols = getSymbols.getSymbolsNasdaq(300)
-                    elif i == 3:
-                        symbols = getSymbols.getSymbolsNasdaq(400)
-                
+                    # Recupero i simboli azionari del Nasdaq, in teoria dovrei lavorare con 100 simboli, ma nella funzione tradingYear_purchase_one_after_the_other vado a recupare i 100 simboli disponibili per cap descrescente.
+                    symbols = getSymbols.getAllSymbolsNasdaq()
                 elif m == 'nyse_actions':
-                    if ite == 0:
-                        symbols = getSymbols.getSymbolsNyse(100)
-                    elif ite == 1:
-                        symbols = getSymbols.getSymbolsNyse(200)
-                    elif ite == 2:
-                        symbols = getSymbols.getSymbolsNyse(300)
-                    elif i == 3:
-                        symbols = getSymbols.getSymbolsNyse(400)
-                    
+                    symbols = getSymbols.getAllSymbolsNyse()
                 elif m == 'larg_comp_eu_actions':
-                    if ite == 0:
-                        symbols = getSymbols.getSymbolsLargestCompEU(100)
-                    elif ite == 1:
-                        symbols = getSymbols.getSymbolsLargestCompEU(200)
-                    elif ite == 2:
-                        symbols = getSymbols.getSymbolsLargestCompEU(300)
-                    elif i == 3:
-                        symbols = getSymbols.getSymbolsLargestCompEU(400)
+                    symbols = getSymbols.getAllSymbolsLargestCompEU()
                     
                 
                 for i in range(len(list_take_profit)):  # Per ogni valore di Take Profit (1%-10%)
-                    roi = []
+                    profitsPerc = []
                     profTot = []
                     middleSale = []
                     middlePurchase= []
@@ -147,7 +125,7 @@ def main(datesToTrade):
                                                     titleBetterProfit=titleBetterProfit, titleWorseProfit=titleWorseProfit, notes=f"TAKE PROFIT = {TK}% ", cur=cur, conn=conn)
                         
                         profTot.append(profitUSD)
-                        roi.append(profitPerc)
+                        profitsPerc.append(profitPerc)
                         middleSale.append(nSale)
                         middlePurchase.append(nPurchase)
                         MmiddleTimeSale.append(middleTimeSale)
@@ -156,9 +134,9 @@ def main(datesToTrade):
                     
 
                     # Calcolo delle statistiche
-                    mean_profit_perc = round(float(np.mean(roi)), 4)
-                    std_deviation = round(float(np.std(roi)), 4)
-                    varianza = round(float(np.var(roi)), 4)
+                    mean_profit_perc = round(float(np.mean(profitsPerc)), 4)
+                    std_deviation = round(float(np.std(profitsPerc)), 4)
+                    varianza = round(float(np.var(profitsPerc)), 4)
                     mean_profit_usd = round(float(np.mean(profTot)), 4)
                     mean_sale = round(float(np.mean(middleSale)), 4)
                     mean_purchase = round(float(np.mean(middlePurchase)), 4)
@@ -186,12 +164,7 @@ def main(datesToTrade):
                     #logging.info(f"Profitto medio: {mean_profit}, Deviazione standard: {std_deviation}")
 
                     notes = None
-                    if ite == 0:
-                        notes = f"TP:{TK}%, {m}, buy no randomly but one after the other and variations of the number of titles:(100) and initial budget 1000."
-                    elif ite == 1:
-                        notes = f"TP:{TK}%, {m}, buy no randomly but one after the other and variations of the number of titles:(200) and initial budget 2000."
-                    elif ite == 2:
-                        notes = f"TP:{TK}%, {m}, buy no randomly but one after the other and variations of the number of titles:(300) and initial budget 3000."
+                    notes = f"TP:{TK}%, {m}, buy no randomly but one after the other and variations of the number of titles:{ite*100} and initial budget {ite*1000} and with get symbols ordered by market cap for initial date of trading."
 
                     insertDataDB.insertInMiddleProfit(idTest, "agent5", roi=mean_profit_perc, devstandard = std_deviation, var= varianza, middleProfitUSD =mean_profit_usd,
                                                     middleSale = mean_sale, middlePurchase = mean_purchase, middleTimeSale = (mean_time_sale/86400), middletitleBetterProfit = mean_titleBetterProfit,
@@ -205,52 +178,53 @@ def main(datesToTrade):
         logging.info("Connessione chiusa e fine del trading agent.")
         cur.close()
         conn.close()
-        logging.shutdown()
+        #logging.shutdown()
 
 
-def getSymbolsDispoible(cur, symbols, market, initial_date, endDate, iterationNumber):
+################################################################################
+
+def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x):
     try:
-        # Recupero dei simboli azionari disponibili per le date di trading scelte. 
+        # Recupero dei simboli azionari disponibili per le date di trading scelte in "symbolDisp"
         cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
-        # symbolDisp = [sy[0] for sy in resSymbolDisp if sy[0] in symbols]
-        symbolDisp = []
-        for sy in cur.fetchall():
-            if sy[0] in symbols:
-                if iterationNumber == 0:
-                    symb100 = symbols[0:100]
-                    if market == 'larg_comp_eu_actions':
-                        symb100 = [sy.split('.')[0] for sy in symb100]
-                    if sy[0] in symb100:
-                        symbolDisp.append(sy[0])
-
-                if iterationNumber == 1:
-                    symb200 = symbols[0:200]
-                    if market == 'larg_comp_eu_actions':
-                        symb200 = [sy.split('.')[0] for sy in symb200]
-                    if sy[0] in symb200:
-                        symbolDisp.append(sy[0])
-                    
-                if iterationNumber == 2:
-                    symb300 = symbols[0:300]
-                    if market == 'larg_comp_eu_actions':
-                        symb300 = [sy.split('.')[0] for sy in symb300]
-                    if sy[0] in symb300:
-                        symbolDisp.append(sy[0])
-                            
-                if iterationNumber == 3:
-                    symb400 = symbols[0:400]
-                    if market == 'larg_comp_eu_actions':
-                        symb400 = [sy.split('.')[0] for sy in symb400]
-                    if sy[0] in symb400:
-                        symbolDisp.append(sy[0])
-                            
+        symbolDisp = [sy[0] for sy in cur.fetchall()]
+        
+        # extract the year for which we are starting trading
+        year = str(initial_date).split('-')[0]
+        
+        if market == 'nasdaq_actions':
+            strMark = 'NASDAQ'
+        elif market == 'nyse_actions':
+            strMark = 'NYSE'
+        elif market == 'larg_comp_eu_actions':
+            strMark = 'LARG_COMP_EU'
+        
+        # get the top x market cap stocks
+        fileMarkCap = f'{market_data_path}/csv_files/marketCap/{strMark}/topVal{year}.csv'
+        with open(fileMarkCap, mode='r') as file:
+            symbXSelect = []
+            for row in file:
+                date, symbols = row.split(',')
+                if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S'):
+                    symbXSelect = symbols.split(';')
+                    symbXSelect = symbXSelect[0:x]
+                    break
+                
+        finalSymbXSelect = []        
+        for symb in symbXSelect:
+            if symb.replace(' ', '') in symbolDisp:
+                finalSymbXSelect.append(symb.replace(' ', ''))
+            
+        
     except Exception as e:
         logging.critical(f"Errore non gestito: {e}")
         logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
     finally:
-        return symbolDisp
+        return finalSymbXSelect
 
 
+
+################################################################################
 
 def getPrices(cur, market, initial_date, endDate):
     try:
@@ -267,19 +241,12 @@ def getPrices(cur, market, initial_date, endDate):
     finally:
         return prices_dict
 
-
+################################################################################
 
 
 def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, market, TP, initial_date, endDate, iterationNumber):    
     # Inizializzazione ad ogni iterazione
-    if iterationNumber == 0:
-        budget = budgetInvestimenti = initial_budget = 1000
-    if iterationNumber == 1:
-        budget = budgetInvestimenti = initial_budget = 2000
-    if iterationNumber == 2:
-        budget = budgetInvestimenti = initial_budget = 3000
-    if iterationNumber == 3:
-        budget = budgetInvestimenti = initial_budget = 4000
+    budget = budgetInvestimenti = initial_budget = iterationNumber*1000
         
     profitTotalUSD = profitTotalPerc = profitNotReinvested = profitNotReinvestedPerc = equity = margin = ticketPur = ticketSale = budgetMantenimento = nSaleProfit = 0
     i = 0   # utilizzata per la scelta del titolo azionario da acquistare
@@ -293,7 +260,9 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     stateAgent = agentState.AgentState.SALE
             
     # Recupero dei simboli azionari disponibili per le date di trading scelte. 
-    symbolDisp = getSymbolsDispoible(cur, symbols, market, initial_date, endDate, iterationNumber)
+    
+    symbolDisp = getXSymbolsOrderedByMarketCap(cur, symbols, market, initial_date, endDate, iterationNumber*100)
+    
     symbolDisp1 = symbolDisp.copy()
     # logging.info(f"Simboli azionari disponibili per il trading: {symbolDisp}\n")
 
@@ -549,6 +518,12 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
 
             ######################## fine WAIT
               
+    purForLog = ''     
+    for k, v in titleProfit.items():
+        #titleProfit[k] = round
+        purForLog += f'{k}: {len(v)}, '
+    logging.info(f"Numero acquisti: {len(purchases)}, acquisti: {purForLog}")
+    
     #return profitTotalPerc
     maxT, minT = '', ''
     maxP, minP = 0, 1000000000
@@ -560,7 +535,8 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
         if titleProfit[k] < minP:
             minP = titleProfit[k]
             minT = k
-
+            
+    profitNotReinvestedPerc = ((profitNotReinvested - initial_budget) / initial_budget )
 
     if middleTimeSale == []:
         return profitNotReinvestedPerc, profitNotReinvested, nSaleProfit, ticketPur, 0, maxT, minT

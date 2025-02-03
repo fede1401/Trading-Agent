@@ -31,7 +31,7 @@ while current_path.name != 'Trading-Agent':
 if str(current_path) not in sys.path:
     sys.path.append(str(current_path))
 
-from config import get_path_specify, market_data_path
+from config import get_path_specify, market_data_path, project_root
 
 # Ora possiamo importare `config`
 get_path_specify(["db", "symbols", "workHistorical", "utils"])
@@ -49,9 +49,13 @@ from utils import getLastIdTest, clearSomeTablesDB, getValueMiddlePrice
 # Funzione principale per il trading e il caricamento
 def main(datesToTrade):
     # Configurazione del logging
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    #logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(filename=f'{project_root}/logs/test.log', level=logging.INFO,  format="%(asctime)s - %(levelname)s - %(message)s")
+
 
     try:
+        logging.info(f"Start agent3_markCapDayInitial: {datetime.now()}")
+
         # Connessione al database
         cur, conn = connectDB.connect_nasdaq()
 
@@ -88,7 +92,7 @@ def main(datesToTrade):
                 symbols = getSymbols.getAllSymbolsLargestCompEU()
 
             for i in range(len(list_take_profit)):  # Per ogni valore di Take Profit (1%-10%)
-                roi = []
+                profitsPerc = []
                 profTot = []
                 middleSale = []
                 middlePurchase = []
@@ -97,6 +101,8 @@ def main(datesToTrade):
                 middletitleWorseProfit = []
 
                 TK = list_take_profit[i]
+                logging.info(f"Start simulation with {TK} agent3_markCapDayInitial : {datetime.now()}")
+
                 idTest = getLastIdTest(cur) 
 
                 total_steps = 100  # Numero di iterazioni principali
@@ -104,6 +110,8 @@ def main(datesToTrade):
                     # Logica principale
                     clearSomeTablesDB(cur, conn)
                     trade_date, initial_date, endDate = datesToTrade[step]
+                    logging.info(f"Start test with {TK} agent3_markCapDayInitial in initial date {initial_date} : {datetime.now()}")
+
                     profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear_purchase_one_after_the_other( cur, conn, symbols, trade_date, m, TK, initial_date, endDate)
 
                     # profitNotReinvestedPerc, profitNotReinvested, ticketSale, ticketPur, float(np.mean( # middleTimeSale)), max(titleProfit[symbol]), min(titleProfit[symbol])
@@ -111,21 +119,22 @@ def main(datesToTrade):
                     print( f"\nProfitto per il test {idTest} con TP={TK}%, {m}, buy one after the other: {profitPerc}, rimangono {total_steps - step - 1} iterazioni\n")
 
                     profitPerc = round(profitPerc, 4)
-                    insertDataDB.insertInTesting(idTest, "agent2", step, initial_date=initial_date, end_date=endDate, profitPerc=profitPerc, profitUSD=profitUSD, market=m, nPurchase=nPurchase, nSale=nSale, middleTimeSaleSecond=middleTimeSale,
+                    insertDataDB.insertInTesting(idTest, "agent3", step, initial_date=initial_date, end_date=endDate, profitPerc=profitPerc, profitUSD=profitUSD, market=m, nPurchase=nPurchase, nSale=nSale, middleTimeSaleSecond=middleTimeSale,
                                                  middleTimeSaleDay=(middleTimeSale / 86400), titleBetterProfit=titleBetterProfit, titleWorseProfit=titleWorseProfit, notes=f"TAKE PROFIT = {TK}% ", cur=cur, conn=conn)
 
                     profTot.append(profitUSD)
-                    roi.append(profitPerc)
+                    profitsPerc.append(profitPerc)
                     middleSale.append(nSale)
                     middlePurchase.append(nPurchase)
                     MmiddleTimeSale.append(middleTimeSale)
                     middletitleBetterProfit.append(titleBetterProfit)
                     middletitleWorseProfit.append(titleWorseProfit)
+                    logging.info(f"End test with {TK} agent3_markCapDayInitial in initial date {initial_date} : {datetime.now()}\n")
 
                 # Calcolo delle statistiche
-                mean_profit_perc = round(float(np.mean(roi)), 4)
-                std_deviation = round(float(np.std(roi)), 4)
-                varianza = round(float(np.var(roi)), 4)
+                mean_profit_perc = round(float(np.mean(profitsPerc)), 4)
+                std_deviation = round(float(np.std(profitsPerc)), 4)
+                varianza = round(float(np.var(profitsPerc)), 4)
                 mean_profit_usd = round(float(np.mean(profTot)), 4)
                 mean_sale = round(float(np.mean(middleSale)), 4)
                 mean_purchase = round(float(np.mean(middlePurchase)), 4)
@@ -151,9 +160,10 @@ def main(datesToTrade):
                 mean_titleWorseProfit = max(dizWorseTitle, key=dizWorseTitle.get)
 
                 # logging.info(f"Profitto medio: {mean_profit}, Deviazione standard: {std_deviation}")
+                logging.info(f"End simulation with {TK} agent3_markCapDayInitial : {datetime.now()}\n\n\n")
 
-                notes = f"TP:{TK}%, {m}, buy no randomly but one after the other"
-                insertDataDB.insertInMiddleProfit(idTest, "agent2", roi=mean_profit_perc, devstandard=std_deviation, var=varianza, middleProfitUSD=mean_profit_usd, middleSale=mean_sale, middlePurchase=mean_purchase,
+                notes = f"TP:{TK}%, {m}, agent3 with mark Cap order by initial date, buy one after the other if the price current is lower than mean price of purchase of the last 50 days."
+                insertDataDB.insertInMiddleProfit(idTest, "agent3", roi=mean_profit_perc, devstandard=std_deviation, var=varianza, middleProfitUSD=mean_profit_usd, middleSale=mean_sale, middlePurchase=mean_purchase,
                                                   middleTimeSale=(mean_time_sale / 86400), middletitleBetterProfit=mean_titleBetterProfit, middletitleWorseProfit=mean_titleWorseProfit, notes=notes, cur=cur, conn=conn)
 
     except Exception as e:
@@ -164,7 +174,7 @@ def main(datesToTrade):
         logging.info("Connessione chiusa e fine del trading agent.")
         cur.close()
         conn.close()
-        logging.shutdown()
+        #logging.shutdown()
 
 ################################################################################
 
@@ -233,6 +243,48 @@ def getSymbolsDispoible(cur, symbols, market, initial_date, endDate):
 
 ################################################################################
 
+def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x):
+    try:
+        # Recupero dei simboli azionari disponibili per le date di trading scelte in "symbolDisp"
+        cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
+        symbolDisp = [sy[0] for sy in cur.fetchall()]
+        
+        # extract the year for which we are starting trading
+        year = str(initial_date).split('-')[0]
+        
+        if market == 'nasdaq_actions':
+            strMark = 'NASDAQ'
+        elif market == 'nyse_actions':
+            strMark = 'NYSE'
+        elif market == 'larg_comp_eu_actions':
+            strMark = 'LARG_COMP_EU'
+        
+        # get the top x market cap stocks
+        fileMarkCap = f'{market_data_path}/csv_files/marketCap/{strMark}/topVal{year}.csv'
+        with open(fileMarkCap, mode='r') as file:
+            symbXSelect = []
+            for row in file:
+                date, symbols = row.split(',')
+                if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S'):
+                    symbXSelect = symbols.split(';')
+                    symbXSelect = symbXSelect[0:x]
+                    break
+                
+        finalSymbXSelect = []        
+        for symb in symbXSelect:
+            if symb.replace(' ', '') in symbolDisp:
+                finalSymbXSelect.append(symb.replace(' ', ''))
+            
+        
+    except Exception as e:
+        logging.critical(f"Errore non gestito: {e}")
+        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+    finally:
+        return finalSymbXSelect
+
+
+################################################################################
+
 
 def getPrices(cur, market, initial_date, endDate):
     try:
@@ -268,7 +320,10 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     stateAgent = agentState.AgentState.SALE
 
     # Recupero dei simboli azionari disponibili per le date di trading scelte. 
-    symbolDisp1 = getSymbolsDispoible(cur, symbols, market, initial_date, endDate)
+    #symbolDisp1 = getSymbolsDispoible(cur, symbols, market, initial_date, endDate)
+    symbolDisp1 = getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, 100)
+    logging.info(f"Test with this symbols : {symbolDisp1}")
+
     #symbolDisp1 = symbolDisp.copy()
     # logging.info(f"Simboli azionari disponibili per il trading: {symbolDisp}\n")
     
@@ -536,6 +591,12 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
 
             ######################## fine WAIT
             
+    purForLog = ''     
+    for k, v in titleProfit.items():
+        #titleProfit[k] = round
+        purForLog += f'{k}: {len(v)}, '
+    logging.info(f"Numero acquisti: {len(purchases)}, acquisti: {purForLog}")
+    
     #return profitTotalPerc
     maxT, minT = '', ''
     maxP, minP = 0, 1000000000
@@ -547,6 +608,8 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
         if titleProfit[k] < minP:
             minP = titleProfit[k]
             minT = k
+            
+    profitNotReinvestedPerc = ((profitNotReinvested - initial_budget) / initial_budget )
 
     if middleTimeSale == []:
         return profitNotReinvestedPerc, profitNotReinvested, nSaleProfit, ticketPur, 0, maxT, minT

@@ -60,7 +60,6 @@ def main(datesToTrade):
     
     datesToTrade1 = [(start, dt, add_two_years(end)) for start, dt, end in datesToTrade]
 
-    
     # Configurazione del logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -71,7 +70,7 @@ def main(datesToTrade):
         # Inserimento dati del login
         # insertDataDB.insertInLoginDate("Federico Ferdinandi", "federico", "TickmillEU-Demo", cur, conn)
 
-        roi = []
+        profitsPerc = []
         profTot = []
         middleSale = []
         middlePurchase = []
@@ -100,7 +99,7 @@ def main(datesToTrade):
                 symbols = getSymbols.getSymbolsLargestCompEU(350)
 
             for i in range(len(list_take_profit)):  # Per ogni valore di Take Profit (1%-10%)
-                roi = []
+                profitsPerc = []
                 profTot = []
                 middleSale = []
                 middlePurchase = []
@@ -127,7 +126,7 @@ def main(datesToTrade):
                                                  middleTimeSaleDay=(middleTimeSale / 86400), titleBetterProfit=titleBetterProfit, titleWorseProfit=titleWorseProfit, notes=f"TAKE PROFIT = {TK}% ", cur=cur, conn=conn)
 
                     profTot.append(profitUSD)
-                    roi.append(profitPerc)
+                    profitsPerc.append(profitPerc)
                     middleSale.append(nSale)
                     middlePurchase.append(nPurchase)
                     MmiddleTimeSale.append(middleTimeSale)
@@ -135,9 +134,9 @@ def main(datesToTrade):
                     middletitleWorseProfit.append(titleWorseProfit)
 
                 # Calcolo delle statistiche
-                mean_profit_perc = round(float(np.mean(roi)), 4)
-                std_deviation = round(float(np.std(roi)), 4)
-                varianza = round(float(np.var(roi)), 4)
+                mean_profit_perc = round(float(np.mean(profitsPerc)), 4)
+                std_deviation = round(float(np.std(profitsPerc)), 4)
+                varianza = round(float(np.var(profitsPerc)), 4)
                 mean_profit_usd = round(float(np.mean(profTot)), 4)
                 mean_sale = round(float(np.mean(middleSale)), 4)
                 mean_purchase = round(float(np.mean(middlePurchase)), 4)
@@ -164,7 +163,7 @@ def main(datesToTrade):
 
                 # logging.info(f"Profitto medio: {mean_profit}, Deviazione standard: {std_deviation}")
 
-                notes = f"TP:{TK}%, {m}, buy no randomly but one after the other in a larger time window"
+                notes = f"TP:{TK}%, {m}, buy no randomly but one after the other in a larger time window and gets 100 symbols by market capitalization at the beginning of the trading date."
                 insertDataDB.insertInMiddleProfit(idTest, "agent7", roi=mean_profit_perc, devstandard=std_deviation, var=varianza, middleProfitUSD=mean_profit_usd, middleSale=mean_sale, middlePurchase=mean_purchase,
                                                   middleTimeSale=(mean_time_sale / 86400), middletitleBetterProfit=mean_titleBetterProfit, middletitleWorseProfit=mean_titleWorseProfit, notes=notes, cur=cur, conn=conn)
 
@@ -176,42 +175,60 @@ def main(datesToTrade):
         logging.info("Connessione chiusa e fine del trading agent.")
         cur.close()
         conn.close()
-        logging.shutdown()
+        #logging.shutdown()
 
 ################################################################################
 
-
+# Recupero dei 100 simboli azionari disponibili per le date di trading scelte, che sono i 100 titoli azionari a maggior capitalizzazione al momento della data di inizio di trading.
 def getSymbolsDispoible(cur, symbols, market, initial_date, endDate):
     try:
-        # Recupero dei simboli azionari disponibili per le date di trading scelte. 
+        # Recupero dei simboli azionari disponibili per le date di trading scelte in "symbolDisp"
         cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
-        # symbolDisp = [sy[0] for sy in resSymbolDisp if sy[0] in symbols]
-        symbolDisp = []
-        #symb100 = symbols[0:100]
+        symbolDisp = [sy[0] for sy in cur.fetchall()]
         
-        selectors = {}
+        # dizionario utilizzato per selezionare i titoli a maggior capitalizzazione attuali alla data di inizio di trading per il test
+        selectors = {}          
+        
+        # recupero dell'anno per il quale si sta iniziando trading
         year = str(initial_date).split('-')[0]
         
         # ottenere i titoli a maggior capitalizzazione
         if market == 'nasdaq_actions':
+            # recupero dei dati relativi alla capitalizzazione di mercato dei titoli azionari del NASDAQ
             with open(f'{market_data_path}/csv_files/marketCap/NASDAQ/{year}.csv', mode='r') as file:
                 for row in file:
+                    # recupero del simbolo azionario, della data e della capitalizzazione di mercato per ogni riga del file
                     symb, date, cap = row.split(',')
-                    #print(datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S'))
-                    #print(date[0:-6])
+                    
+                    if symb not in symbolDisp:
+                        continue
+                    
+                    # se la data è uguale alla data di inizio di trading allora si aggiunge la capitalizzazione di mercato del titolo azionario al dizionario selectors
                     if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S') :
                         if symb in selectors.keys():
                             selectors[symb] += [float(cap.replace('\n', ''))]
                         else:
                             selectors[symb] = [float(cap.replace('\n', ''))]
+                            
+            # ordinamento del dizionario selectors in ordine alfabetico per il simbolo azionario: calcolo per controllo della correzione degli ordinamenti.
             selectors = dict(sorted(selectors.items()))
+            
+            # ordinamento del dizionario selectors in ordine decrescente di capitalizzazione di mercato
             symbSelect = sorted(selectors, key=lambda x: selectors[x], reverse=True)
+            
+            # selezione dei primi 100 titoli azionari a maggior capitalizzazione
             symbSelect100 = symbSelect[0:100]
-                        
+        
+        # stesso procedimento per gli altri mercati:
+        
         if market == 'nyse_actions':
             with open(f'{market_data_path}/csv_files/marketCap/NYSE/{year}.csv', mode='r') as file:
                 for row in file:
                     symb, date, cap = row.split(',')
+                    
+                    if symb not in symbolDisp:
+                        continue
+                    
                     if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S') :
                         if symb in selectors.keys():
                             selectors[symb] += [float(cap.replace('\n', ''))]
@@ -224,6 +241,10 @@ def getSymbolsDispoible(cur, symbols, market, initial_date, endDate):
             with open(f'{market_data_path}/csv_files/marketCap/LARG_COMP_EU/{year}.csv', mode='r') as file:
                 for row in file:
                     symb, date, cap = row.split(',')
+                    
+                    if symb not in symbolDisp:
+                        continue
+                    
                     if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S') :
                         if symb in selectors.keys():
                             selectors[symb] += [float(cap.replace('\n', ''))]
@@ -233,19 +254,67 @@ def getSymbolsDispoible(cur, symbols, market, initial_date, endDate):
             symbSelect100 = symbSelect[0:100]
             symbSelect100 = [sy.split('.')[0] for sy in symbSelect100]
         
-        for sy in cur.fetchall():
-            if sy[0] in symbSelect100:
-                symbolDisp.append(sy[0])
+        # per ogni simbolo disponibile per le date di trading scelte, se il simbolo è tra i 100 titoli azionari a maggior capitalizzazione allora si aggiunge alla lista symbolDisp 
+        #for sy in cur.fetchall():
+        #    symbolDisp = [sy[0] if sy[0] in symbSelect100 else None]
+            #if sy[0] in symbSelect100:
+            #    symbolDisp.append(sy[0])
                 
     except Exception as e:
         logging.critical(f"Errore non gestito: {e}")
         logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
     finally:
-        return symbolDisp
+        return symbSelect100
+
+################################################################################
+
+
+def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x):
+    try:
+        # Recupero dei simboli azionari disponibili per le date di trading scelte in "symbolDisp"
+        cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
+        symbolDisp = [sy[0] for sy in cur.fetchall()]
+        
+        # extract the year for which we are starting trading
+        year = str(initial_date).split('-')[0]
+        
+        if market == 'nasdaq_actions':
+            strMark = 'NASDAQ'
+        elif market == 'nyse_actions':
+            strMark = 'NYSE'
+        elif market == 'larg_comp_eu_actions':
+            strMark = 'LARG_COMP_EU'
+        
+        # get the top x market cap stocks
+        fileMarkCap = f'{market_data_path}/csv_files/marketCap/{strMark}/topVal{year}.csv'
+        with open(fileMarkCap, mode='r') as file:
+            symbXSelect = []
+            for row in file:
+                date, symbols = row.split(',')
+                if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S'):
+                    symbXSelect = symbols.split(';')
+                    symbXSelect = symbXSelect[0:x]
+                    break
+                
+        finalSymbXSelect = []        
+        for symb in symbXSelect:
+            if symb.replace(' ', '') in symbolDisp:
+                finalSymbXSelect.append(symb.replace(' ', ''))
+            
+        
+    except Exception as e:
+        logging.critical(f"Errore non gestito: {e}")
+        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+    finally:
+        return finalSymbXSelect
+
+
+
 
 
 ################################################################################
 
+# Recupero dei prezzi dei simboli azionari per le date di trading scelte
 def getPrices(cur, market, initial_date, endDate):
     try:
         cur.execute( f"SELECT symbol, time_value_it, open_price, high_price FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
@@ -260,6 +329,7 @@ def getPrices(cur, market, initial_date, endDate):
         logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
     finally:
         return prices_dict
+
 
 ################################################################################
 
@@ -278,8 +348,8 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     stateAgent = agentState.AgentState.SALE
 
     # Recupero dei simboli azionari disponibili per le date di trading scelte. 
-    symbolDisp = getSymbolsDispoible(cur, symbols, market, initial_date, endDate)
-    symbolDisp1 = symbolDisp.copy()
+    symbolDisp1 = getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, 100)
+    
     # logging.info(f"Simboli azionari disponibili per il trading: {symbolDisp}\n")
 
     # Ottimizzazione 4: Recupera TUTTI i prezzi dei simboli disponibili per il periodo in una sola query
@@ -531,6 +601,12 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
 
         ######################## fine WAIT
 
+    purForLog = ''     
+    for k, v in titleProfit.items():
+        #titleProfit[k] = round
+        purForLog += f'{k}: {len(v)}, '
+    logging.info(f"Numero acquisti: {len(purchases)}, acquisti: {purForLog}")
+    
     # return profitTotalPerc
     maxT, minT = '', ''
     maxP, minP = 0, 1000000000
@@ -542,6 +618,9 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
         if titleProfit[k] < minP:
             minP = titleProfit[k]
             minT = k
+            
+    profitNotReinvestedPerc = ((profitNotReinvested - initial_budget) / initial_budget )
+
 
     if middleTimeSale == []:
         return profitNotReinvestedPerc, profitNotReinvested, nSaleProfit, ticketPur, 0, maxT, minT
