@@ -47,7 +47,7 @@ from utils import getLastIdTest, clearSomeTablesDB, getValueMiddlePrice
 
 
 # Funzione principale per il trading e il caricamento
-def main(datesToTrade):
+def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesNyse, symbolsDispoInDatesLarge, pricesDispoInDatesNasd, pricesDispoInDatesNyse, pricesDispoInDatesLarge):
     # Configurazione del logging
     #logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     logging.basicConfig(filename=f'{project_root}/logs/test.log', level=logging.INFO,  format="%(asctime)s - %(levelname)s - %(message)s")
@@ -62,7 +62,7 @@ def main(datesToTrade):
         # Inserimento dati del login
         # insertDataDB.insertInLoginDate("Federico Ferdinandi", "federico", "TickmillEU-Demo", cur, conn)
 
-        roi = []
+        profitsPerc = []
         profTot = []
         middleSale = []
         middlePurchase = []
@@ -86,10 +86,16 @@ def main(datesToTrade):
             if m == 'nasdaq_actions':
                 # Recupero i simboli azionari del Nasdaq, in teoria dovrei lavorare con 100 simboli, ma nella funzione tradingYear_purchase_one_after_the_other vado a recupare i 100 simboli disponibili per cap descrescente.
                 symbols = getSymbols.getAllSymbolsNasdaq()
+                symbolsDispoInDates = symbolsDispoInDatesNasd
+                pricesDispoInDates = pricesDispoInDatesNasd
             elif m == 'nyse_actions':
                 symbols = getSymbols.getAllSymbolsNyse()
+                symbolsDispoInDates = symbolsDispoInDatesNyse
+                pricesDispoInDates = pricesDispoInDatesNyse
             elif m == 'larg_comp_eu_actions':
                 symbols = getSymbols.getAllSymbolsLargestCompEU()
+                symbolsDispoInDates = symbolsDispoInDatesLarge
+                pricesDispoInDates = pricesDispoInDatesLarge
 
             for i in range(len(list_take_profit)):  # Per ogni valore di Take Profit (1%-10%)
                 profitsPerc = []
@@ -105,14 +111,14 @@ def main(datesToTrade):
 
                 idTest = getLastIdTest(cur) 
 
-                total_steps = 100  # Numero di iterazioni principali
-                for step in range(total_steps):
+                total_steps = len(datesToTrade)  #   # Numero di iterazioni principali
+                for step in range(len(datesToTrade)):
                     # Logica principale
                     clearSomeTablesDB(cur, conn)
                     trade_date, initial_date, endDate = datesToTrade[step]
                     logging.info(f"Start test with {TK} agent3_markCapDayInitial in initial date {initial_date} : {datetime.now()}")
 
-                    profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear_purchase_one_after_the_other( cur, conn, symbols, trade_date, m, TK, initial_date, endDate)
+                    profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear_purchase_one_after_the_other( cur, conn, symbols, trade_date, m, TK, initial_date, endDate, dizMarkCap, symbolsDispoInDates, pricesDispoInDates)
 
                     # profitNotReinvestedPerc, profitNotReinvested, ticketSale, ticketPur, float(np.mean( # middleTimeSale)), max(titleProfit[symbol]), min(titleProfit[symbol])
 
@@ -176,78 +182,14 @@ def main(datesToTrade):
         conn.close()
         #logging.shutdown()
 
-################################################################################
-
-def getSymbolsDispoible(cur, symbols, market, initial_date, endDate):
-    try:
-        # Recupero dei simboli azionari disponibili per le date di trading scelte. 
-        cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
-        # symbolDisp = [sy[0] for sy in resSymbolDisp if sy[0] in symbols]
-        symbolDisp = []
-        #symb100 = symbols[0:100]
-        
-        selectors = {}
-        year = str(initial_date).split('-')[0]
-        
-        # ottenere i titoli a maggior capitalizzazione
-        if market == 'nasdaq_actions':
-            with open(f'{market_data_path}/csv_files/marketCap/NASDAQ/{year}.csv', mode='r') as file:
-                for row in file:
-                    symb, date, cap = row.split(',')
-                    #print(datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S'))
-                    #print(date[0:-6])
-                    if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S') :
-                        if symb in selectors.keys():
-                            selectors[symb] += [float(cap.replace('\n', ''))]
-                        else:
-                            selectors[symb] = [float(cap.replace('\n', ''))]
-            selectors = dict(sorted(selectors.items()))
-            symbSelect = sorted(selectors, key=lambda x: selectors[x], reverse=True)
-            symbSelect100 = symbSelect[0:100]
-                        
-        if market == 'nyse_actions':
-            with open(f'{market_data_path}/csv_files/marketCap/NYSE/{year}.csv', mode='r') as file:
-                for row in file:
-                    symb, date, cap = row.split(',')
-                    if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S') :
-                        if symb in selectors.keys():
-                            selectors[symb] += [float(cap.replace('\n', ''))]
-                        else:
-                            selectors[symb] = [float(cap.replace('\n', ''))]
-            symbSelect = sorted(selectors, key=lambda x: selectors[x], reverse=True)
-            symbSelect100 = symbSelect[0:100]
-            
-        if market == 'larg_comp_eu_actions':
-            with open(f'{market_data_path}/csv_files/marketCap/LARG_COMP_EU/{year}.csv', mode='r') as file:
-                for row in file:
-                    symb, date, cap = row.split(',')
-                    if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S') :
-                        if symb in selectors.keys():
-                            selectors[symb] += [float(cap.replace('\n', ''))]
-                        else:
-                            selectors[symb] = [float(cap.replace('\n', ''))]
-            symbSelect = sorted(selectors, key=lambda x: selectors[x], reverse=True)
-            symbSelect100 = symbSelect[0:100]
-            symbSelect100 = [sy.split('.')[0] for sy in symbSelect100]
-        
-        for sy in cur.fetchall():
-            if sy[0] in symbSelect100:
-                symbolDisp.append(sy[0])
-                
-    except Exception as e:
-        logging.critical(f"Errore non gestito: {e}")
-        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
-    finally:
-        return symbolDisp
-
 
 ################################################################################
 
-def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x):
+def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x, dizMarkCap, symbolsDispoInDates):
     try:
         # Recupero dei simboli azionari disponibili per le date di trading scelte in "symbolDisp"
-        cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
-        symbolDisp = [sy[0] for sy in cur.fetchall()]
+        #cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
+        #symbolDisp = [sy[0] for sy in cur.fetchall()]
         
         # extract the year for which we are starting trading
         year = str(initial_date).split('-')[0]
@@ -259,7 +201,7 @@ def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x):
         elif market == 'larg_comp_eu_actions':
             strMark = 'LARG_COMP_EU'
         
-        # get the top x market cap stocks
+        """# get the top x market cap stocks
         fileMarkCap = f'{market_data_path}/csv_files/marketCap/{strMark}/topVal{year}.csv'
         with open(fileMarkCap, mode='r') as file:
             symbXSelect = []
@@ -274,8 +216,20 @@ def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x):
         for symb in symbXSelect:
             if symb.replace(' ', '') in symbolDisp:
                 finalSymbXSelect.append(symb.replace(' ', ''))
+        """
+        symbXSelect = dizMarkCap[strMark][year][datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S')]
+        #for date, symbols in dizMarkCap[strMark][year]:
+        #    if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S'):
+        symbXSelect = symbXSelect[0].split(';')
+        symbXSelect = symbXSelect[0:x]
+                
             
+        finalSymbXSelect = []        
+        for symb in symbXSelect:
+            if symb.replace(' ', '') in symbolsDispoInDates[initial_date]:
+                finalSymbXSelect.append(symb.replace(' ', ''))
         
+            
     except Exception as e:
         logging.critical(f"Errore non gestito: {e}")
         logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
@@ -286,7 +240,8 @@ def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x):
 ################################################################################
 
 
-def getPrices(cur, market, initial_date, endDate):
+def getPrices(cur, market, initial_date, endDate, pricesDispoInDates):
+    """
     try:
         cur.execute( f"SELECT symbol, time_value_it, open_price, high_price FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
         
@@ -299,13 +254,14 @@ def getPrices(cur, market, initial_date, endDate):
         logging.critical(f"Errore non gestito: {e}")
         logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
     finally:
-        return prices_dict
+    """
+    return (pricesDispoInDates[initial_date])[0]
 
 
 ################################################################################
 
 
-def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, market, TP, initial_date, endDate):
+def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, market, TP, initial_date, endDate, dizMarkCap, symbolsDispoInDates, pricesDispoInDates):
     # Inizializzazione a ogni iterazione
     budgetInvestimenti = initial_budget = 1000 # budget = 
     profitTotalUSD = profitTotalPerc = profitNotReinvested = profitNotReinvestedPerc = ticketPur = ticketSale = budgetMantenimento = nSaleProfit = 0 # equity = margin = 0 
@@ -321,7 +277,7 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
 
     # Recupero dei simboli azionari disponibili per le date di trading scelte. 
     #symbolDisp1 = getSymbolsDispoible(cur, symbols, market, initial_date, endDate)
-    symbolDisp1 = getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, 100)
+    symbolDisp1 = getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, 100, dizMarkCap, symbolsDispoInDates)
     logging.info(f"Test with this symbols : {symbolDisp1}")
 
     #symbolDisp1 = symbolDisp.copy()
@@ -331,7 +287,7 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     
 
     # Ottimizzazione 4: Recupera TUTTI i prezzi dei simboli disponibili per il periodo in una sola query
-    prices_dict = getPrices(cur, market, initial_date, endDate)
+    prices_dict = getPrices(cur, market, initial_date, endDate,  pricesDispoInDates)
 
     # Ottengo tutte le date per l'iterazione:
     cur.execute(f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{initial_date}' and time_value_it < '{endDate}' order by time_value_it;")

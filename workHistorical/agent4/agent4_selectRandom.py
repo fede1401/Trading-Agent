@@ -36,7 +36,7 @@ while current_path.name != 'Trading-Agent':
 if str(current_path) not in sys.path:
     sys.path.append(str(current_path))
 
-from config import get_path_specify, market_data_path
+from config import get_path_specify, market_data_path, project_root
 
 # Ora possiamo importare `config`
 get_path_specify(["db", "symbols", "workHistorical", "utils"])
@@ -49,9 +49,10 @@ from utils import getLastIdTest, clearSomeTablesDB
 
 
 
-def main(datesToTrade):
+def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesNyse, symbolsDispoInDatesLarge, pricesDispoInDatesNasd, pricesDispoInDatesNyse, pricesDispoInDatesLarge):
     # configurazione del logging
-    logging.basicConfig( level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s" )
+    #logging.basicConfig( level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s" )
+    logging.basicConfig(filename=f'{project_root}/logs/test.log', level=logging.INFO,  format="%(asctime)s - %(levelname)s - %(message)s")
     
     #logging.disable(logging.CRITICAL)
             
@@ -81,14 +82,18 @@ def main(datesToTrade):
                                               middletitleBetterProfit='----',
                                               middletitleWorseProfit=0, notes='---', cur=cur, conn=conn)
             if m == 'nasdaq_actions':
-                # Recupero i simboli azionari del Nasdaq, in teoria dovrei lavorare con 100 simboli, ma nella
-                # funzione tradingYear_purchase_one_after_the_other vado a recupare i 100 simboli disponibili per cap
-                # descrescente.
-                symbols = getSymbols.getSymbolsNasdaq(350)
+                # Recupero i simboli azionari del Nasdaq, in teoria dovrei lavorare con 100 simboli, ma nella funzione tradingYear_purchase_one_after_the_other vado a recupare i 100 simboli disponibili per cap descrescente.
+                symbols = getSymbols.getAllSymbolsNasdaq()
+                symbolsDispoInDates = symbolsDispoInDatesNasd
+                pricesDispoInDates = pricesDispoInDatesNasd
             elif m == 'nyse_actions':
-                symbols = getSymbols.getSymbolsNyse(350)
+                symbols = getSymbols.getAllSymbolsNyse()
+                symbolsDispoInDates = symbolsDispoInDatesNyse
+                pricesDispoInDates = pricesDispoInDatesNyse
             elif m == 'larg_comp_eu_actions':
-                symbols = getSymbols.getSymbolsLargestCompEU(350)
+                symbols = getSymbols.getAllSymbolsLargestCompEU()
+                symbolsDispoInDates = symbolsDispoInDatesLarge
+                pricesDispoInDates = pricesDispoInDatesLarge
                 
             # Ciclo per la variazione del parametro relativo al delay di ri-acquisto di un titolo azionario venduto.
             for i in range(0, 30):
@@ -107,12 +112,12 @@ def main(datesToTrade):
                     # get last idTest
                     idTest = getLastIdTest(cur)
                     
-                    total_steps = 100  # Numero di iterazioni principali
+                    total_steps = len(datesToTrade)  # 
                     for step in range(total_steps):
                         # Logica principale
                         clearSomeTablesDB(cur, conn)
                         trade_date, initial_date, endDate = datesToTrade[step]
-                        profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear(cur, conn, symbols, trade_date, m, DELAY, TK, initial_date, endDate)
+                        profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear(cur, conn, symbols, trade_date, m, DELAY, TK, initial_date, endDate, dizMarkCap, symbolsDispoInDates, pricesDispoInDates)
                         
                         # profitNotReinvestedPerc, profitNotReinvested, ticketSale, ticketPur, float(np.mean(middleTimeSale)), max(titleProfit[symbol]), min(titleProfit[symbol])
                         
@@ -184,21 +189,20 @@ def main(datesToTrade):
 ################################################################################
 
 # Recupero dei 100 simboli azionari a random disponibili per le date di trading scelte.
-def getSymbolsDispoible(cur, symbols, market, initial_date, endDate):
+def getSymbolsDispoible(cur, symbols, market, initial_date, endDate, symbolsDispoInDates):
     try:
         # Recupero dei simboli azionari disponibili per le date di trading scelte in "symbolDisp"
-        cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
-        symbolDisp = [sy[0] for sy in cur.fetchall()]
+        #cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
+        #symbolDisp = [sy[0] for sy in cur.fetchall()]
         
         # si seleziona randomicamente tra i simboli disponibili per le date di trading scelte, 100 simboli azionari:
-        symbSelect100 = random.sample(symbolDisp, 100)
+        symbSelect100 = random.sample(symbolsDispoInDates[initial_date], 100)
                 
     except Exception as e:
         logging.critical(f"Errore non gestito: {e}")
         logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
     finally:
         return symbSelect100
-
 
 ################################################################################
 
@@ -222,7 +226,7 @@ def getPrices(cur, market, initial_date, endDate):
 ################################################################################
 
                   
-def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date, endDate):    
+def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date, endDate, dizMarkCap, symbolsDispoInDates, pricesDispoInDates):
     # Inizializzazione ad ogni iterazione
     #budget = 1000
     budgetInvestimenti = initial_budget = 1000
@@ -242,12 +246,14 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
     stateAgent = agentState.AgentState.SALE
             
     # Recupero dei 100 simboli azionari disponibili a maggior capitalizzazione per le date di trading scelte. 
-    symbolDisp = getSymbolsDispoible(cur, market, initial_date, endDate)
+    symbolDisp = getSymbolsDispoible(cur, symbols, market, initial_date, endDate, symbolsDispoInDates)
     
     # logging.info(f"Simboli azionari disponibili per il trading: {symbolDisp}\n")
 
     # Ottimizzazione 4: Recupera TUTTI i prezzi dei simboli disponibili per il periodo in una sola query
-    prices_dict = getPrices(cur, market, initial_date, endDate)
+    #prices_dict = getPrices(cur, market, initial_date, endDate)
+    prices_dict = (pricesDispoInDates[initial_date])[0]
+
 
     # Ottengo tutte le date per l'iterazione:
     cur.execute(f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{initial_date}' and time_value_it < '{endDate}' order by time_value_it;")
