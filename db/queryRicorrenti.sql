@@ -218,3 +218,19 @@
 -- select * from testing where id>=599 order by numbertest ;
 
 -- select * from middleprofit order by testid desc;
+
+
+--select * from testing, middleprofit
+--where id= testid
+--order by profitperc desc;
+
+--select symbol, time_value_it, open_price, high_price, low_price, close_price 
+--from nasdaq_actions 
+--where symbol = 'GMGI' 
+--and time_value_IT between '2016-01-01' and '2017-01-01' 
+--order by time_value_it;
+
+-- select * from larg_comp_eu_actions where time_value_IT between '2009-05-18' and '2010-05-18';
+
+-- select * from middleprofit order by testid desc;
+

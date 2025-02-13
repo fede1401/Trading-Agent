@@ -49,14 +49,53 @@ from symbols import getSymbols
 import agentState
 from utils import getLastIdTest, clearSomeTablesDB
 
+logger_agent5 = logging.getLogger('agent5')
+logger_agent5.setLevel(logging.INFO)
+
+# Evita di aggiungere più volte lo stesso handler
+if not logger_agent5.handlers:
+    # Crea un file handler che scrive in un file specifico
+    file_handler = logging.FileHandler(f'{project_root}/logs/testAgent5.log')
+    file_handler.setLevel(logging.INFO)
+
+    # Definisci il formatter
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(formatter)
+
+    # Aggiungi il file handler al logger
+    logger_agent5.addHandler(file_handler)
+
+logger_agent5.propagate = False
+
+
+"Simboli che presentano anomalie nei dati di mercato"
+SYMB_NASD_ANOMALIE= [ 'IDEX', 'CYRX', 'QUBT', 'POCI', 'MULN', 'BTCS', 'HEPA', 'OLB', 'NITO', 'XELA', 'ABVC', 'GMGI', 
+                      'CELZ', 'IMTX', 'AREC', 'MNMD', 'PRTG', 'CHRD', 'ACCD', 'SPI',  'PRTG', 'NCPL', 'BBLGW', 'COSM', 
+                      'ATXG', 'SILO', 'KWE', 'TOP',  'TPST', 'NXTT', 'OCTO', 'EGRX', 'AAGR', 'MYNZ', 'IDEX', 'CSSE', 
+                      'BFI', 'EFTR', 'DRUG', 'GROM', 'HPCO', 'NCNC', 'SMFL']
+
+SYMB_NYSE_ANOMALIE = [ 'WT', 'EMP', 'IVT', 'EMP', 'AMPY', 'ARCH', 'ODV' ]
+
+SYMB_LARGE_ANOMALIE = [ 'SNK', 'CBE', 'BST', 'BOL', 'GEA', 'NTG', 'MBK', 'MOL', 'MAN', '1913', 
+                       'SBB-B', 'SES', 'DIA', 'H2O', 'EVO', 'LOCAL', 'ATO', 'FRAG', 'MYNZ' ]
+    
+SYMB_TOT_ANOMALIE = ['IDEX', 'CYRX', 'QUBT', 'POCI', 'MULN', 'BTCS', 'HEPA', 'OLB', 'NITO', 'XELA', 'ABVC', 'GMGI', 
+                      'CELZ', 'IMTX', 'AREC', 'MNMD', 'PRTG', 'CHRD', 'ACCD', 'SPI',  'PRTG', 'NCPL', 'BBLGW', 'COSM', 
+                      'ATXG', 'SILO', 'KWE', 'TOP',  'TPST', 'NXTT', 'OCTO', 'EGRX', 'AAGR', 'MYNZ', 'IDEX', 'CSSE', 
+                      'BFI', 'EFTR', 'DRUG', 'GROM', 'HPCO', 'NCNC', 'SMFL', 'WT', 'EMP', 'IVT', 'EMP', 'AMPY', 'ARCH', 'ODV',
+                      'SNK', 'CBE', 'BST', 'BOL', 'GEA', 'NTG', 'MBK', 'MOL', 'MAN', '1913', 
+                       'SBB-B', 'SES', 'DIA', 'H2O', 'EVO', 'LOCAL', 'ATO', 'FRAG', 'MYNZ' ]
+
 
 # Funzione principale per il trading e il caricamento
-def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesNyse, symbolsDispoInDatesLarge, pricesDispoInDatesNasd, pricesDispoInDatesNyse, pricesDispoInDatesLarge):
+def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesNyse, symbolsDispoInDatesLarge, pricesDispoInDatesNasd, pricesDispoInDatesNyse, pricesDispoInDatesLarge, totaledates):
     # Configurazione del logging
     #logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-    logging.basicConfig(filename=f'{project_root}/logs/test.log', level=logging.INFO,  format="%(asctime)s - %(levelname)s - %(message)s")
+    #logging.basicConfig(filename=f'{project_root}/logs/testAgent5.log', level=logging.INFO,  format="%(asctime)s - %(levelname)s - %(message)s")
     
     try:
+        logger_agent5.info(f"Start agent5_markCapDayInitial: {datetime.now()} \n")
+
         # Connessione al database
         cur, conn = connectDB.connect_nasdaq()
 
@@ -81,6 +120,7 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
             # Inizio elaborazione per i diversi mercati
             market = ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']
             for m in market:
+                logger_agent5.info(f"\n\nWork with market {m} : {datetime.now()}")
                 idTest = getLastIdTest(cur)
                 insertDataDB.insertInMiddleProfit(idTest, "------", roi=0, devstandard=0, var=0, middleProfitUSD=0,  middleSale=0, middlePurchase=0, middleTimeSale=0,  middletitleBetterProfit='----', middletitleWorseProfit=0, notes='---', cur=cur, conn=conn)
                 if m == 'nasdaq_actions':
@@ -116,8 +156,9 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
                         # Logica principale
                         clearSomeTablesDB(cur, conn)
                         trade_date, initial_date, endDate = datesToTrade[step]
+                        logger_agent5.info(f"Start test with {TK} agent5_markCapDayInitial in initial date {initial_date} : {datetime.now()}")
 
-                        profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, m, TK, initial_date, endDate, ite, dizMarkCap, symbolsDispoInDates, pricesDispoInDates)
+                        profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, m, TK, initial_date, endDate, ite, dizMarkCap, symbolsDispoInDates, pricesDispoInDates, totaledates[m])
                         
                         # profitNotReinvestedPerc, profitNotReinvested, ticketSale, ticketPur, float(np.mean(middleTimeSale)), max(titleProfit[symbol]), min(titleProfit[symbol])
                         
@@ -135,7 +176,8 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
                         MmiddleTimeSale.append(middleTimeSale)
                         middletitleBetterProfit.append(titleBetterProfit)
                         middletitleWorseProfit.append(titleWorseProfit)
-                    
+                        logger_agent5.info(f"End test with {TK} agent5_markCapDayInitial in initial date {initial_date} : {datetime.now()}\n\n")
+
 
                     # Calcolo delle statistiche
                     mean_profit_perc = round(float(np.mean(profitsPerc)), 4)
@@ -164,7 +206,8 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
                             
                     mean_titleBetterProfit = max(dizBetterTitle, key=dizBetterTitle.get)
                     mean_titleWorseProfit = max(dizWorseTitle, key=dizWorseTitle.get)
-                    
+                    logger_agent5.info(f"End simulation with {TK} agent5_markCapDayInitial : {datetime.now()} \n\n\n\n")
+
                     #logging.info(f"Profitto medio: {mean_profit}, Deviazione standard: {std_deviation}")
 
                     notes = None
@@ -175,11 +218,11 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
                                                         middletitleWorseProfit = mean_titleWorseProfit, notes=notes, cur=cur, conn=conn)
 
     except Exception as e:
-        logging.critical(f"Errore non gestito: {e}")
-        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+        logger_agent5.critical(f"Errore non gestito: {e}")
+        logger_agent5.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
 
     finally:
-        logging.info("Connessione chiusa e fine del trading agent.")
+        logger_agent5.info("Connessione chiusa e fine del trading agent.")
         cur.close()
         conn.close()
         #logging.shutdown()
@@ -220,7 +263,7 @@ def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x, dizMark
             if symb.replace(' ', '') in symbolDisp:
                 finalSymbXSelect.append(symb.replace(' ', ''))
         """
-        symbXSelect = dizMarkCap[strMark][year][datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S')]
+        symbXSelect = dizMarkCap[strMark][year][initial_date.strftime('%Y-%m-%d %H:%M:%S')]
         #for date, symbols in dizMarkCap[strMark][year]:
         #    if date[0:-6] == datetime.strftime(initial_date, '%Y-%m-%d %H:%M:%S'):
         symbXSelect = symbXSelect[0].split(';')
@@ -230,11 +273,12 @@ def getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, x, dizMark
         finalSymbXSelect = []        
         for symb in symbXSelect:
             if symb.replace(' ', '') in symbolsDispoInDates[initial_date]:
-                finalSymbXSelect.append(symb.replace(' ', ''))
+                if symb.replace(' ', '') not in SYMB_TOT_ANOMALIE:
+                    finalSymbXSelect.append(symb.replace(' ', ''))
         
     except Exception as e:
-        logging.critical(f"Errore non gestito: {e}")
-        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+        logger_agent5.critical(f"Errore non gestito: {e}")
+        logger_agent5.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
     finally:
         return finalSymbXSelect
 
@@ -264,7 +308,7 @@ def getPrices(cur, market, initial_date, endDate, pricesDispoInDates):
 ################################################################################
 
 
-def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, market, TP, initial_date, endDate, iterationNumber, dizMarkCap, symbolsDispoInDates, pricesDispoInDates):    
+def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, market, TP, initial_date, endDate, iterationNumber, dizMarkCap, symbolsDispoInDates, pricesDispoInDates,  totaledates):   
     # Inizializzazione ad ogni iterazione
     budget = budgetInvestimenti = initial_budget = iterationNumber*1000
         
@@ -274,6 +318,7 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     titleProfit = {}
     sales = set()
     purchases = set()
+    salesDict = {}
  
     # Inserimento dei dati iniziali dell'agente nel database ---> #insertDataDB.insertInDataTrader(trade_date, agentState.AgentState.INITIAL, initial_budget, budget, 0, 0, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
                 
@@ -282,7 +327,7 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     # Recupero dei simboli azionari disponibili per le date di trading scelte. 
     
     symbolDisp1 = getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, iterationNumber*100, dizMarkCap, symbolsDispoInDates)
-    logging.info(f"Test with this symbols : {symbolDisp1}")
+    logger_agent5.info(f"Test with this symbols : {symbolDisp1}")
     
     #symbolDisp = getXSymbolsOrderedByMarketCap(cur, symbols, market, initial_date, endDate, iterationNumber*100)
     #symbolDisp1 = getXSymbolsOrderedByMarketCap(cur, market, initial_date, endDate, 100, dizMarkCap, symbolsDispoInDates)
@@ -292,12 +337,13 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     # logging.info(f"Simboli azionari disponibili per il trading: {symbolDisp}\n")
 
     # Ottimizzazione 4: Recupera TUTTI i prezzi dei simboli disponibili per il periodo in una sola query
-    prices_dict = getPrices(cur, market, initial_date, endDate)
+    prices_dict = getPrices(cur, market, initial_date, endDate, pricesDispoInDates)
     
     # Ottengo tutte le date per l'iterazione:
-    cur.execute(
-        f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{initial_date}' and time_value_it < '{endDate}' order by time_value_it;")
-    datesTrade = cur.fetchall()
+    #cur.execute(
+    #    f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{initial_date}' and time_value_it < '{endDate}' order by time_value_it;")
+    #datesTrade = cur.fetchall()
+    datesTrade = totaledates[initial_date.strftime('%Y-%m-%d %H:%M:%S')]
 
     i_for_date = 0
     
@@ -367,6 +413,8 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                                 # Aggiornamento del valore dei profitti totali (comprensivi dei dollari che non reinvesto)
                                 profitNotReinvested = budgetMantenimento
                                 profitNotReinvestedPerc = (profitNotReinvested/initial_budget)*100
+                                
+                                salesDict[ticketSale] = (dateObject, datePur, ticketP, volume, symbol, price_current, price_open, profit, perc_profit)
 
                                 # Aggiornamento dello stato dell'agent nel database
                                 #insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
@@ -463,7 +511,8 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                 if i_for_date < len(datesTrade):
                     trade_date = datesTrade[i_for_date]
                     # trade_date = trade_date.strftime('%Y-%m-%d %H:%M:%S')
-                    trade_date = str(trade_date[0])
+                    #trade_date = str(trade_date[0])
+                    trade_date = trade_date.strftime('%Y-%m-%d %H:%M:%S')
 
                 if i_for_date >= len(datesTrade):
 
@@ -515,6 +564,8 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                                 # Aggiornamento del valore dei profitti totali (comprensivi dei dollari che non reinvesto)
                                 profitNotReinvested = budgetMantenimento
                                 profitNotReinvestedPerc = (profitNotReinvested / initial_budget) * 100
+                                
+                                salesDict[ticketSale] = (dateObject, datePur, ticketP, volume, symbol, price_current, price_open, profit, perc_profit)
                             
                             else:
                                 # Non c'è profitto, vendiamo al prezzo corrente.
@@ -533,11 +584,13 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
                                 # Aggiornamento del valore dei profitti totali (comprensivi dei dollari che non reinvesto)
                                 profitNotReinvested = budgetMantenimento
                                 profitNotReinvestedPerc = (profitNotReinvested / initial_budget) * 100
+                                
+                                salesDict[ticketSale] = (dateObject, datePur, ticketP, volume, symbol, price_current, price_open, profit, perc_profit)
                     break
 
                 #logging.info(f"Cambio di stato da WAIT a SALE\n\n")
                 #logging.info(f"{initial_date} --> {trade_date} --> {endDate}: profUSD: {profitTotalUSD} | profPerc:{profitTotalPerc}")
-                logging.info(f"{initial_date} --> {trade_date} --> {endDate}:   {round(profitNotReinvested, 4)} USD  |   {round(profitNotReinvestedPerc, 4)} %")
+                #logging.info(f"{initial_date} --> {trade_date} --> {endDate}:   {round(profitNotReinvested, 4)} USD  |   {round(profitNotReinvestedPerc, 4)} %")
                 
                 stateAgent = agentState.AgentState.SALE
 
@@ -547,7 +600,7 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
     for k, v in titleProfit.items():
         #titleProfit[k] = round
         purForLog += f'{k}: {len(v)}, '
-    logging.info(f"Numero acquisti: {len(purchases)}, acquisti: {purForLog}")
+    logger_agent5.info(f"Numero acquisti: {len(purchases)}, acquisti: {purForLog}")
     
     #return profitTotalPerc
     maxT, minT = '', ''
@@ -561,7 +614,13 @@ def tradingYear_purchase_one_after_the_other(cur, conn, symbols, trade_date, mar
             minP = titleProfit[k]
             minT = k
             
-    profitNotReinvestedPerc = ((profitNotReinvested - initial_budget) / initial_budget )
+    profitNotReinvestedPerc = ((profitNotReinvested - initial_budget) / initial_budget )  * 100
+
+    logger_agent5.info(f"Profitto in percentuale : {profitNotReinvestedPerc} %")
+    
+    if profitNotReinvestedPerc > 250:
+        for tick, infoS in salesDict.items():
+            logger_agent5.info(f"{tick}: date sale: {infoS[1]}, data purchase: {infoS[0]}, ticketAcq: {infoS[2]}, volume: {infoS[3]}, simbolo: {infoS[4]}, prezzo corrente di vendita: {infoS[5]}, prezzo acquisto: {infoS[6]}, profitto: {infoS[7]}, profitto percentuale: {infoS[8]}")
 
     if middleTimeSale == []:
         return profitNotReinvestedPerc, profitNotReinvested, nSaleProfit, ticketPur, 0, maxT, minT

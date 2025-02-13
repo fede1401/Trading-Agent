@@ -297,7 +297,7 @@ def getMarkCap(marketFiles):
                 historical_data[["Close", "Market Cap"]].to_csv(f"{market_data_path}/csv_files/marketCap/LARG_COMP_EU/market_cap_{sy}.csv")
                 print(f"Dati salvati in market_cap_{sy}.csv")
             
-            time.sleep(0.5)
+            time.sleep(1)
 
             # Mostra i primi valori
             #print(historical_data[["Close", "Market Cap"]].head())
@@ -306,9 +306,11 @@ def getMarkCap(marketFiles):
 
 def orderMarkCapYears():
     market = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
+    #market = ['LARG_COMP_EU']
     year = ['1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
     
     yearFile = ['1999.csv', '2000.csv', '2001.csv', '2002.csv', '2003.csv', '2004.csv', '2005.csv', '2006.csv', '2007.csv', '2008.csv', '2009.csv', '2010.csv', '2011.csv', '2012.csv', '2013.csv', '2014.csv', '2015.csv', '2016.csv', '2017.csv', '2018.csv', '2019.csv', '2020.csv', '2021.csv', '2022.csv', '2023.csv', '2024.csv']
+    topFiles = ['topVal1999.csv', 'topVal2000.csv', 'topVal2001.csv', 'topVal2002.csv', 'topVal2003.csv', 'topVal2004.csv', 'topVal2005.csv', 'topVal2006.csv', 'topVal2007.csv', 'topVal2008.csv', 'topVal2009.csv', 'topVal2010.csv', 'topVal2011.csv', 'topVal2012.csv', 'topVal2013.csv', 'topVal2014.csv', 'topVal2015.csv', 'topVal2016.csv', 'topVal2017.csv', 'topVal2018.csv', 'topVal2019.csv', 'topVal2020.csv', 'topVal2021.csv', 'topVal2022.csv', 'topVal2023.csv', 'topVal2024.csv']
     
     countNasd = countNys = countEur = 0
     
@@ -329,7 +331,7 @@ def orderMarkCapYears():
     for mark in market:
         # Ordina i file csv per anno
         for f in os.listdir(f"{market_data_path}/csv_files/marketCap/{mark}"):
-            if (f in yearFile) or (f == '.DS_Store'):
+            if (f in yearFile) or (f == '.DS_Store') or (f in topFiles):
                 continue
             i += 1
             print(f"{i}, : {f}")
@@ -468,6 +470,7 @@ def preprocess_topX_for_year():
 def preprocess_topX_for_year():
     # Preprocess topX per ogni anno
     markets = ['NASDAQ', 'NYSE', 'LARG_COMP_EU']
+    #markets = ['LARG_COMP_EU']
     
     try:
         for m in markets:
@@ -481,6 +484,7 @@ def preprocess_topX_for_year():
                         if row.strip() == 'symbol,date,market_cap':  # Ignora l'header
                             continue
                         symb, date, mrkcap = row.strip().split(',')
+                        date = date[0:-6]
                         
                         if date not in dates:
                             dates[date] = [(symb, float(mrkcap))]
@@ -536,8 +540,8 @@ if __name__ == '__main__':
     
     getMarkCap(marketFiles)
     orderMarkCapYears()
-    #deleteFilesAboutSingleTitles()
+    deleteFilesAboutSingleTitles()
     #year = ['1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023']
     #for y in year:
-    #preprocess_topX_for_year()
+    preprocess_topX_for_year()
     #preprocess_top100_for_year()

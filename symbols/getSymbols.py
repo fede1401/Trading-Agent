@@ -27,7 +27,16 @@ get_path_specify(["db", "marketData"])
 from db import connectDB, insertDataDB
 
 
-    
+"Simboli che presentano anomalie nei dati di mercato"
+SYMB_NASD_ANOMALIE= [ 'IDEX', 'CYRX', 'QUBT', 'POCI', 'MULN', 'BTCS', 'HEPA', 'OLB', 'NITO', 'XELA', 'ABVC', 'GMGI', 
+                      'CELZ', 'IMTX', 'AREC', 'MNMD', 'PRTG', 'CHRD', 'ACCD', 'SPI',  'PRTG', 'NCPL', 'BBLGW', 'COSM', 
+                      'ATXG', 'SILO', 'KWE', 'TOP',  'TPST', 'NXTT', 'OCTO', 'EGRX', 'AAGR', 'MYNZ', 'IDEX', 'CSSE', 
+                      'BFI', 'EFTR', 'DRUG', 'GROM', 'HPCO', 'NCNC', 'SMFL']
+
+SYMB_NYSE_ANOMALIE = [ 'WT', 'EMP', 'IVT', 'EMP', 'AMPY', 'ARCH', 'ODV' ]
+
+SYMB_LARGE_ANOMALIE = [ 'SNK', 'CBE', 'BST', 'BOL', 'GEA', 'NTG', 'MBK', 'MOL', 'MAN', '1913', 
+                       'SBB-B', 'SES', 'DIA', 'H2O', 'EVO', 'LOCAL', 'ATO', 'FRAG', 'MYNZ' ]
     
     
 # Funzione per leggere i simboli Nasdaq da un file CSV
@@ -117,8 +126,11 @@ def getAllSymbolsNasdaq():
         csv_reader = csv.DictReader(file)
     
          # Aggiungi ogni simbolo dalla colonna 'Symbol' del CSV alla lista
-        symbols =[col['Symbol'] for col in csv_reader]    
+        symbols =[col['Symbol'] for col in csv_reader if col['Symbol'] not in SYMB_NASD_ANOMALIE]    
     # Ritorna la lista dei simboli
+    
+    print('BFI' in symbols)
+    
     return symbols
     
     
@@ -148,7 +160,7 @@ def getAllSymbolsNyse():
         csv_reader = csv.DictReader(file)
     
          # Aggiungi ogni simbolo dalla colonna 'Symbol' del CSV alla lista
-        symbols =[col['Symbol'] for col in csv_reader]    
+        symbols =[col['Symbol'] for col in csv_reader if col['Symbol'] not in SYMB_NYSE_ANOMALIE]    
     # Ritorna la lista dei simboli
     return symbols
     
@@ -178,8 +190,8 @@ def getAllSymbolsLargestCompEU():
         # Crea un lettore CSV con DictReader
         csv_reader = csv.DictReader(file)
     
-         # Aggiungi ogni simbolo dalla colonna 'Symbol' del CSV alla lista
-        symbols =[col['Symbol'] for col in csv_reader]    
+        # Aggiungi ogni simbolo dalla colonna 'Symbol' del CSV alla lista
+        symbols =[col['Symbol'] for col in csv_reader if col['Symbol'] not in SYMB_LARGE_ANOMALIE]    
     # Ritorna la lista dei simboli
     return symbols
     

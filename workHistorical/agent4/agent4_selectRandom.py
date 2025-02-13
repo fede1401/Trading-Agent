@@ -47,16 +47,43 @@ from symbols import getSymbols
 import agentState
 from utils import getLastIdTest, clearSomeTablesDB
 
+logger_agent4 = logging.getLogger('agent4')
+logger_agent4.setLevel(logging.INFO)
+
+# Evita di aggiungere più volte lo stesso handler
+if not logger_agent4.handlers:
+    # Crea un file handler che scrive in un file specifico
+    file_handler = logging.FileHandler(f'{project_root}/logs/testAgent4.log')
+    file_handler.setLevel(logging.INFO)
+
+    # Definisci il formatter
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(formatter)
+
+    # Aggiungi il file handler al logger
+    logger_agent4.addHandler(file_handler)
+
+logger_agent4.propagate = False
 
 
-def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesNyse, symbolsDispoInDatesLarge, pricesDispoInDatesNasd, pricesDispoInDatesNyse, pricesDispoInDatesLarge):
+SYMB_TOT_ANOMALIE = ['IDEX', 'CYRX', 'QUBT', 'POCI', 'MULN', 'BTCS', 'HEPA', 'OLB', 'NITO', 'XELA', 'ABVC', 'GMGI', 
+                      'CELZ', 'IMTX', 'AREC', 'MNMD', 'PRTG', 'CHRD', 'ACCD', 'SPI',  'PRTG', 'NCPL', 'BBLGW', 'COSM', 
+                      'ATXG', 'SILO', 'KWE', 'TOP',  'TPST', 'NXTT', 'OCTO', 'EGRX', 'AAGR', 'MYNZ', 'IDEX', 'CSSE', 
+                      'BFI', 'EFTR', 'DRUG', 'GROM', 'HPCO', 'NCNC', 'SMFL', 'WT', 'EMP', 'IVT', 'EMP', 'AMPY', 'ARCH', 'ODV',
+                      'SNK', 'CBE', 'BST', 'BOL', 'GEA', 'NTG', 'MBK', 'MOL', 'MAN', '1913', 
+                       'SBB-B', 'SES', 'DIA', 'H2O', 'EVO', 'LOCAL', 'ATO', 'FRAG', 'MYNZ' ]
+
+
+def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesNyse, symbolsDispoInDatesLarge, pricesDispoInDatesNasd, pricesDispoInDatesNyse, pricesDispoInDatesLarge, totaledates):
     # configurazione del logging
     #logging.basicConfig( level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s" )
-    logging.basicConfig(filename=f'{project_root}/logs/test.log', level=logging.INFO,  format="%(asctime)s - %(levelname)s - %(message)s")
+    #logging.basicConfig(filename=f'{project_root}/logs/testAgent4.log', level=logging.INFO,  format="%(asctime)s - %(levelname)s - %(message)s")
     
     #logging.disable(logging.CRITICAL)
             
     try:
+        logger_agent4.info(f"Start agent4_selectRandom: {datetime.now()} \n")
+
         # Connessione al database
         cur, conn = connectDB.connect_nasdaq()
 
@@ -76,6 +103,7 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
         market = ['nasdaq_actions', 'nyse_actions', 'larg_comp_eu_actions']
         #market = ['larg_comp_eu_actions']
         for m in market:
+            logger_agent4.info(f"\n\nWork with market {m} : {datetime.now()}")
             idTest = getLastIdTest(cur)
             insertDataDB.insertInMiddleProfit(idTest, "------", roi=0, devstandard=0, var=0, middleProfitUSD=0,
                                               middleSale=0, middlePurchase=0, middleTimeSale=0,
@@ -96,7 +124,7 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
                 pricesDispoInDates = pricesDispoInDatesLarge
                 
             # Ciclo per la variazione del parametro relativo al delay di ri-acquisto di un titolo azionario venduto.
-            for i in range(0, 30):
+            for i in range(0, 25):
                 DELAY = i
                 for i in range(len(list_take_profit)):
                     profitsPerc = []
@@ -117,7 +145,8 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
                         # Logica principale
                         clearSomeTablesDB(cur, conn)
                         trade_date, initial_date, endDate = datesToTrade[step]
-                        profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear(cur, conn, symbols, trade_date, m, DELAY, TK, initial_date, endDate, dizMarkCap, symbolsDispoInDates, pricesDispoInDates)
+                        logger_agent4.info(f"Start test with {TK} agent4_selectRandom in initial date {initial_date} : {datetime.now()}")
+                        profitPerc, profitUSD, nSale, nPurchase, middleTimeSale, titleBetterProfit, titleWorseProfit = tradingYear(cur, conn, symbols, trade_date, m, DELAY, TK, initial_date, endDate, dizMarkCap, symbolsDispoInDates, pricesDispoInDates, totaledates[m])
                         
                         # profitNotReinvestedPerc, profitNotReinvested, ticketSale, ticketPur, float(np.mean(middleTimeSale)), max(titleProfit[symbol]), min(titleProfit[symbol])
                         
@@ -135,7 +164,8 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
                         MmiddleTimeSale.append(middleTimeSale)
                         middletitleBetterProfit.append(titleBetterProfit)
                         middletitleWorseProfit.append(titleWorseProfit)
-                
+                        logger_agent4.info(f"End test with {TK} agent4_selectRandom in initial date {initial_date} : {datetime.now()}\n\n")
+
                 # end for take profit
 
                     # Calcolo delle statistiche
@@ -167,21 +197,23 @@ def main(datesToTrade, dizMarkCap, symbolsDispoInDatesNasd, symbolsDispoInDatesN
                     mean_titleWorseProfit = max(dizWorseTitle, key=dizWorseTitle.get)
                     
                     #logging.info(f"Profitto medio: {mean_profit}, Deviazione standard: {std_deviation}")
-
+                    logger_agent4.info(f"End simulation with {TK} agent4_selectRandom : {datetime.now()} \n\n\n\n")
+            
+        
                     notes = f"TP:{TK}%, {m}, buy no randomly but one after the other and buy after sale same title in {DELAY} days and with choices random of 100 symbols."
                     insertDataDB.insertInMiddleProfit(idTest, "agent4", roi=mean_profit_perc, devstandard = std_deviation, var= varianza, middleProfitUSD =mean_profit_usd,
                                                     middleSale = mean_sale, middlePurchase = mean_purchase, middleTimeSale = (mean_time_sale/86400), middletitleBetterProfit = mean_titleBetterProfit,
                                                         middletitleWorseProfit = mean_titleWorseProfit, notes=notes, cur=cur, conn=conn)
 
     except Exception as e:
-        logging.critical(f"Errore non gestito: {e}")
-        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+        logger_agent4.critical(f"Errore non gestito: {e}")
+        logger_agent4.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
 
     finally:
-        logging.info("Connessione chiusa e fine del trading agent.")
+        logger_agent4.info("Connessione chiusa e fine del trading agent.")
         cur.close()
         conn.close()
-        logging.shutdown()
+        logger_agent4.shutdown()
 
 ################################################################################
 
@@ -195,12 +227,17 @@ def getSymbolsDispoible(cur, symbols, market, initial_date, endDate, symbolsDisp
         #cur.execute(f"SELECT distinct(symbol) FROM {market} WHERE time_value_it BETWEEN '{initial_date}' AND '{endDate}';")
         #symbolDisp = [sy[0] for sy in cur.fetchall()]
         
+        valid_symbols = [s for s in symbolsDispoInDates[initial_date] if s not in SYMB_TOT_ANOMALIE]
+
+        # Poi fai il sample dalla lista già filtrata:
+        symbSelect100 = random.sample(valid_symbols, 100)
+        
         # si seleziona randomicamente tra i simboli disponibili per le date di trading scelte, 100 simboli azionari:
-        symbSelect100 = random.sample(symbolsDispoInDates[initial_date], 100)
+        #symbSelect100 = random.sample(symbolsDispoInDates[initial_date], 100)
                 
     except Exception as e:
-        logging.critical(f"Errore non gestito: {e}")
-        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+        logger_agent4.critical(f"Errore non gestito: {e}")
+        logger_agent4.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
     finally:
         return symbSelect100
 
@@ -217,8 +254,8 @@ def getPrices(cur, market, initial_date, endDate):
             prices_dict[(symbol, time_value_it.strftime('%Y-%m-%d %H:%M:%S'))] = (open_price, high_price)
     
     except Exception as e:
-        logging.critical(f"Errore non gestito: {e}")
-        logging.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
+        logger_agent4.critical(f"Errore non gestito: {e}")
+        logger_agent4.critical(f"Dettagli del traceback:\n{traceback.format_exc()}")
     finally:
         return prices_dict
 
@@ -226,7 +263,7 @@ def getPrices(cur, market, initial_date, endDate):
 ################################################################################
 
                   
-def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date, endDate, dizMarkCap, symbolsDispoInDates, pricesDispoInDates):
+def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date, endDate, dizMarkCap, symbolsDispoInDates, pricesDispoInDates, totaledates):
     # Inizializzazione ad ogni iterazione
     #budget = 1000
     budgetInvestimenti = initial_budget = 1000
@@ -239,6 +276,7 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
     titleProfit = {}
     sales = set()
     purchases = set()
+    salesDict = {}
     
     # Inserimento dei dati iniziali dell'agente nel database
     #insertDataDB.insertInDataTrader(trade_date, agentState.AgentState.INITIAL, initial_budget, 1000, 0, 0, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
@@ -247,7 +285,8 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
             
     # Recupero dei 100 simboli azionari disponibili a maggior capitalizzazione per le date di trading scelte. 
     symbolDisp = getSymbolsDispoible(cur, symbols, market, initial_date, endDate, symbolsDispoInDates)
-    
+    logger_agent4.info(f"Test with this symbols : {symbolDisp}")
+
     # logging.info(f"Simboli azionari disponibili per il trading: {symbolDisp}\n")
 
     # Ottimizzazione 4: Recupera TUTTI i prezzi dei simboli disponibili per il periodo in una sola query
@@ -256,8 +295,9 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
 
 
     # Ottengo tutte le date per l'iterazione:
-    cur.execute(f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{initial_date}' and time_value_it < '{endDate}' order by time_value_it;")
-    datesTrade = cur.fetchall()
+    #cur.execute(f"SELECT distinct time_value_it FROM {market} WHERE time_value_it > '{initial_date}' and time_value_it < '{endDate}' order by time_value_it;")
+    #datesTrade = cur.fetchall()
+    datesTrade = totaledates[initial_date.strftime('%Y-%m-%d %H:%M:%S')]
 
     i_for_date = 0
 
@@ -331,6 +371,8 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
                                 # Aggiornamento dello stato dell'agent nel database
                                 #insertDataDB.insertInDataTrader(dateObject, stateAgent, initial_budget, budget, equity, margin, profitTotalUSD, profitTotalPerc, budgetMantenimento, budgetInvestimenti, cur, conn)
 
+                                salesDict[ticketSale] = (dateObject, datePur, ticketP, volume, symbol, price_current, price_open, profit, perc_profit)
+                                
                                 whatPurchase.append((symbol, DELAY, price_current, ticketSale))
                                 #logging.info( f"Venduta azione {symbol} in data:{trade_date} comprata in data:{datePur}, prezzo attuale:{price_current}, prezzo di acquisto: {price_open}, con profitto di: {profit} = {perc_profit}, budgetInvestimenti: {budgetInvestimenti}, budgetMantenimento: {budgetMantenimento}")
 
@@ -444,7 +486,8 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
                 i_for_date += 1
                 if i_for_date < len(datesTrade):
                     trade_date = datesTrade[i_for_date]
-                    trade_date = str(trade_date[0])
+                    #trade_date = str(trade_date[0])
+                    trade_date = trade_date.strftime('%Y-%m-%d %H:%M:%S')
 
                 #if trade_date >= endDate:
                 if i_for_date >= len(datesTrade):
@@ -501,6 +544,8 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
                                 # Aggiornamento del valore dei profitti totali (comprensivi dei dollari che non reinvesto)
                                 profitNotReinvested = budgetMantenimento
                                 profitNotReinvestedPerc = (profitNotReinvested / initial_budget) * 100
+                                
+                                salesDict[ticketSale] = (dateObject, datePur, ticketP, volume, symbol, price_current, price_open, profit, perc_profit)
                             
                             else:
                                 # Non c'è profitto, vendiamo al prezzo corrente.
@@ -519,11 +564,13 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
                                 # Aggiornamento del valore dei profitti totali (comprensivi dei dollari che non reinvesto)
                                 profitNotReinvested = budgetMantenimento
                                 profitNotReinvestedPerc = (profitNotReinvested / initial_budget) * 100
+                                
+                                salesDict[ticketSale] = (dateObject, datePur, ticketP, volume, symbol, price_current, price_open, profit, perc_profit)
                     break
 
                 #logging.info(f"Cambio di stato da WAIT a SALE\n\n")
                 #logging.info(f"{initial_date} --> {trade_date} --> {endDate}: profUSD: {profitTotalUSD} | profPerc:{profitTotalPerc}")
-                logging.info(f"{initial_date} --> {trade_date} --> {endDate}:   {round(profitNotReinvested, 4)} USD  |   {round(profitNotReinvestedPerc, 4)} %")
+                #logging.info(f"{initial_date} --> {trade_date} --> {endDate}:   {round(profitNotReinvested, 4)} USD  |   {round(profitNotReinvestedPerc, 4)} %")
                 
                 for n in range(0, len(whatPurchase)):
                     if whatPurchase[n][1] > 0:
@@ -537,7 +584,7 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
     for k, v in titleProfit.items():
         #titleProfit[k] = round
         purForLog += f'{k}: {len(v)}, '
-    logging.info(f"Numero acquisti: {len(purchases)}, acquisti: {purForLog}")
+    logger_agent4.info(f"Numero acquisti: {len(purchases)}, acquisti: {purForLog}")
     
     #return profitTotalPerc
     maxT, minT = '', ''
@@ -551,8 +598,13 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
             minP = titleProfit[k]
             minT = k
             
-    profitNotReinvestedPerc = ((profitNotReinvested - initial_budget) / initial_budget )
+    profitNotReinvestedPerc = ((profitNotReinvested - initial_budget) / initial_budget ) * 100
+    logger_agent4.info(f"Profitto in percentuale : {profitNotReinvestedPerc} %")
     
+    if profitNotReinvestedPerc > 250:
+        for tick, infoS in salesDict.items():
+            logger_agent4.info(f"{tick}: date sale: {infoS[1]}, data purchase: {infoS[0]}, ticketAcq: {infoS[2]}, volume: {infoS[3]}, simbolo: {infoS[4]}, prezzo corrente di vendita: {infoS[5]}, prezzo acquisto: {infoS[6]}, profitto: {infoS[7]}, profitto percentuale: {infoS[8]}")
+
     if middleTimeSale == []:
         return profitNotReinvestedPerc, profitNotReinvested, nSaleProfit, ticketPur, 0, maxT, minT
 
@@ -566,17 +618,18 @@ def tradingYear(cur, conn, symbols, trade_date, market, DELAY, TK, initial_date,
 
 if __name__ == "__main__":
     # Connessione al database
-    cur, conn = connectDB.connect_nasdaq()
+    #cur, conn = connectDB.connect_nasdaq()
     #datesToTrade = generateiRandomDates(cur)
     
     #datesToTrade1 = [('1999-06-24 00:00:00', datetime(1999, 6, 24, 0, 0), '2000-06-24 00:00:00'), ('1999-07-16 00:00:00', datetime(1999, 7, 16, 0, 0), '2000-07-16 00:00:00'), ('1999-09-08 00:00:00', datetime(1999, 9, 8, 0, 0), '2000-09-08 00:00:00'), ('2001-08-08 00:00:00', datetime(2001, 8, 8, 0, 0), '2002-08-08 00:00:00'), ('2001-09-24 00:00:00', datetime(2001, 9, 24, 0, 0), '2002-09-24 00:00:00'), ('2001-09-24 00:00:00', datetime(2001, 9, 24, 0, 0), '2002-09-24 00:00:00'), ('2002-11-01 00:00:00', datetime(2002, 11, 1, 0, 0), '2003-11-01 00:00:00'), ('2002-11-18 00:00:00', datetime(2002, 11, 18, 0, 0), '2003-11-18 00:00:00'), ('2004-01-09 00:00:00', datetime(2004, 1, 9, 0, 0), '2005-01-09 00:00:00'), ('2004-08-18 00:00:00', datetime(2004, 8, 18, 0, 0), '2005-08-18 00:00:00'), ('2006-11-02 00:00:00', datetime(2006, 11, 2, 0, 0), '2007-11-02 00:00:00'), ('2006-11-15 00:00:00', datetime(2006, 11, 15, 0, 0), '2007-11-15 00:00:00'), ('2007-10-22 00:00:00', datetime(2007, 10, 22, 0, 0), '2008-10-22 00:00:00'), ('2008-12-05 00:00:00', datetime(2008, 12, 5, 0, 0), '2009-12-05 00:00:00'), ('2009-04-16 00:00:00', datetime(2009, 4, 16, 0, 0), '2010-04-16 00:00:00'), ('2009-10-20 00:00:00', datetime(2009, 10, 20, 0, 0), '2010-10-20 00:00:00'), ('2009-11-23 00:00:00', datetime(2009, 11, 23, 0, 0), '2010-11-23 00:00:00'), ('2010-07-16 00:00:00', datetime(2010, 7, 16, 0, 0), '2011-07-16 00:00:00'), ('2011-06-09 00:00:00', datetime(2011, 6, 9, 0, 0), '2012-06-09 00:00:00'), ('2011-07-28 00:00:00', datetime(2011, 7, 28, 0, 0), '2012-07-28 00:00:00'), ('2011-09-20 00:00:00', datetime(2011, 9, 20, 0, 0), '2012-09-20 00:00:00'), ('2012-11-19 00:00:00', datetime(2012, 11, 19, 0, 0), '2013-11-19 00:00:00'), ('2012-12-20 00:00:00', datetime(2012, 12, 20, 0, 0), '2013-12-20 00:00:00'), ('2013-03-01 00:00:00', datetime(2013, 3, 1, 0, 0), '2014-03-01 00:00:00'), ('2013-06-28 00:00:00', datetime(2013, 6, 28, 0, 0), '2014-06-28 00:00:00'), ('2013-08-12 00:00:00', datetime(2013, 8, 12, 0, 0), '2014-08-12 00:00:00'), ('2014-01-13 00:00:00', datetime(2014, 1, 13, 0, 0), '2015-01-13 00:00:00'), ('2014-01-21 00:00:00', datetime(2014, 1, 21, 0, 0), '2015-01-21 00:00:00'), ('2014-01-30 00:00:00', datetime(2014, 1, 30, 0, 0), '2015-01-30 00:00:00'), ('2015-03-04 00:00:00', datetime(2015, 3, 4, 0, 0), '2016-03-04 00:00:00'), ('2015-03-13 00:00:00', datetime(2015, 3, 13, 0, 0), '2016-03-13 00:00:00'), ('2015-03-16 00:00:00', datetime(2015, 3, 16, 0, 0), '2016-03-16 00:00:00'), ('2015-03-26 00:00:00', datetime(2015, 3, 26, 0, 0), '2016-03-26 00:00:00'), ('2015-04-28 00:00:00', datetime(2015, 4, 28, 0, 0), '2016-04-28 00:00:00'), ('2015-05-14 00:00:00', datetime(2015, 5, 14, 0, 0), '2016-05-14 00:00:00'), ('2015-09-15 00:00:00', datetime(2015, 9, 15, 0, 0), '2016-09-15 00:00:00'), ('2016-02-23 00:00:00', datetime(2016, 2, 23, 0, 0), '2017-02-23 00:00:00'), ('2016-03-18 00:00:00', datetime(2016, 3, 18, 0, 0), '2017-03-18 00:00:00'), ('2016-04-06 00:00:00', datetime(2016, 4, 6, 0, 0), '2017-04-06 00:00:00'), ('2016-10-06 00:00:00', datetime(2016, 10, 6, 0, 0), '2017-10-06 00:00:00'), ('2017-02-15 00:00:00', datetime(2017, 2, 15, 0, 0), '2018-02-15 00:00:00'), ('2017-03-15 00:00:00', datetime(2017, 3, 15, 0, 0), '2018-03-15 00:00:00'), ('2017-05-01 00:00:00', datetime(2017, 5, 1, 0, 0), '2018-05-01 00:00:00'), ('2017-08-14 00:00:00', datetime(2017, 8, 14, 0, 0), '2018-08-14 00:00:00'), ('2017-08-15 00:00:00', datetime(2017, 8, 15, 0, 0), '2018-08-15 00:00:00'), ('2017-08-16 00:00:00', datetime(2017, 8, 16, 0, 0), '2018-08-16 00:00:00'), ('2017-10-30 00:00:00', datetime(2017, 10, 30, 0, 0), '2018-10-30 00:00:00'), ('2018-02-14 00:00:00', datetime(2018, 2, 14, 0, 0), '2019-02-14 00:00:00'), ('2018-03-29 00:00:00', datetime(2018, 3, 29, 0, 0), '2019-03-29 00:00:00'), ('2018-05-14 00:00:00', datetime(2018, 5, 14, 0, 0), '2019-05-14 00:00:00'), ('2018-06-04 00:00:00', datetime(2018, 6, 4, 0, 0), '2019-06-04 00:00:00'), ('2018-08-09 00:00:00', datetime(2018, 8, 9, 0, 0), '2019-08-09 00:00:00'), 
     # ('2019-03-14 00:00:00', datetime(2019, 3, 14, 0, 0), '2020-03-14 00:00:00'), ('2019-05-03 00:00:00', datetime(2019, 5, 3, 0, 0), '2020-05-03 00:00:00'), ('2019-05-17 00:00:00', datetime(2019, 5, 17, 0, 0), '2020-05-17 00:00:00'), ('2019-06-17 00:00:00', datetime(2019, 6, 17, 0, 0), '2020-06-17 00:00:00'), ('2019-06-27 00:00:00', datetime(2019, 6, 27, 0, 0), '2020-06-27 00:00:00'), ('2020-01-10 00:00:00', datetime(2020, 1, 10, 0, 0), '2021-01-10 00:00:00'), ('2020-01-31 00:00:00', datetime(2020, 1, 31, 0, 0), '2021-01-31 00:00:00'), ('2020-03-27 00:00:00', datetime(2020, 3, 27, 0, 0), '2021-03-27 00:00:00'), ('2020-05-26 00:00:00', datetime(2020, 5, 26, 0, 0), '2021-05-26 00:00:00'), ('2020-05-27 00:00:00', datetime(2020, 5, 27, 0, 0), '2021-05-27 00:00:00'), ('2020-08-05 00:00:00', datetime(2020, 8, 5, 0, 0), '2021-08-05 00:00:00'), ('2020-08-17 00:00:00', datetime(2020, 8, 17, 0, 0), '2021-08-17 00:00:00'), ('2020-09-11 00:00:00', datetime(2020, 9, 11, 0, 0), '2021-09-11 00:00:00'), ('2020-10-21 00:00:00', datetime(2020, 10, 21, 0, 0), '2021-10-21 00:00:00'), ('2021-02-10 00:00:00', datetime(2021, 2, 10, 0, 0), '2022-02-10 00:00:00'), ('2021-03-30 00:00:00', datetime(2021, 3, 30, 0, 0), '2022-03-30 00:00:00'), ('2021-04-14 00:00:00', datetime(2021, 4, 14, 0, 0), '2022-04-14 00:00:00'), ('2021-07-08 00:00:00', datetime(2021, 7, 8, 0, 0), '2022-07-08 00:00:00'), ('2021-08-11 00:00:00', datetime(2021, 8, 11, 0, 0), '2022-08-11 00:00:00'), ('2021-08-12 00:00:00', datetime(2021, 8, 12, 0, 0), '2022-08-12 00:00:00'), ('2021-08-18 00:00:00', datetime(2021, 8, 18, 0, 0), '2022-08-18 00:00:00'), ('2021-10-28 00:00:00', datetime(2021, 10, 28, 0, 0), '2022-10-28 00:00:00'), ('2021-11-04 00:00:00', datetime(2021, 11, 4, 0, 0), '2022-11-04 00:00:00'), ('2021-11-04 00:00:00', datetime(2021, 11, 4, 0, 0), '2022-11-04 00:00:00'), ('2021-11-11 00:00:00', datetime(2021, 11, 11, 0, 0), '2022-11-11 00:00:00'), ('2021-12-28 00:00:00', datetime(2021, 12, 28, 0, 0), '2022-12-28 00:00:00'), ('2022-01-07 00:00:00', datetime(2022, 1, 7, 0, 0), '2023-01-07 00:00:00'), ('2022-02-08 00:00:00', datetime(2022, 2, 8, 0, 0), '2023-02-08 00:00:00'), ('2022-04-04 00:00:00', datetime(2022, 4, 4, 0, 0), '2023-04-04 00:00:00'), ('2022-05-10 00:00:00', datetime(2022, 5, 10, 0, 0), '2023-05-10 00:00:00'), ('2022-05-26 00:00:00', datetime(2022, 5, 26, 0, 0), '2023-05-26 00:00:00'), ('2022-06-15 00:00:00', datetime(2022, 6, 15, 0, 0), '2023-06-15 00:00:00'), ('2022-06-21 00:00:00', datetime(2022, 6, 21, 0, 0), '2023-06-21 00:00:00'), ('2022-10-17 00:00:00', datetime(2022, 10, 17, 0, 0), '2023-10-17 00:00:00'), ('2022-12-29 00:00:00', datetime(2022, 12, 29, 0, 0), '2023-12-29 00:00:00'), ('2023-01-09 00:00:00', datetime(2023, 1, 9, 0, 0), '2024-01-09 00:00:00'), ('2023-01-20 00:00:00', datetime(2023, 1, 20, 0, 0), '2024-01-20 00:00:00'), ('2023-03-03 00:00:00', datetime(2023, 3, 3, 0, 0), '2024-03-03 00:00:00'), ('2023-03-10 00:00:00', datetime(2023, 3, 10, 0, 0), '2024-03-10 00:00:00'), ('2023-03-22 00:00:00', datetime(2023, 3, 22, 0, 0), '2024-03-22 00:00:00'), ('2023-04-13 00:00:00', datetime(2023, 4, 13, 0, 0), '2024-04-13 00:00:00'), ('2023-04-20 00:00:00', datetime(2023, 4, 20, 0, 0), '2024-04-20 00:00:00'), ('2023-04-28 00:00:00', datetime(2023, 4, 28, 0, 0), '2024-04-28 00:00:00'), ('2023-05-24 00:00:00', datetime(2023, 5, 24, 0, 0), '2024-05-24 00:00:00'), ('2023-08-15 00:00:00', datetime(2023, 8, 15, 0, 0), '2024-08-15 00:00:00'), ('2023-08-24 00:00:00', datetime(2023, 8, 24, 0, 0), '2024-08-24 00:00:00'), ('2023-09-08 00:00:00', datetime(2023, 9, 8, 0, 0), '2024-09-08 00:00:00'), ('2023-10-25 00:00:00', datetime(2023, 10, 25, 0, 0), '2024-10-25 00:00:00')]
 
     
-    cur.close()
-    conn.close()
+    #cur.close()
+    #conn.close()
 
     #main(datesToTrade1)
+    print()
 
 
 # Metti in pausa il programma per il tempo specificato
